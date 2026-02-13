@@ -153,7 +153,18 @@ Saddlebag can optionally back up credentials (API keys, tokens, secrets) using t
 saddlebag backup --workspace ~/clawd --with-credentials
 ```
 
-Credentials are encrypted with [age](https://age-encryption.org) and stored as a separately encrypted vault within the archive. You'll be prompted for a passphrase during backup and restore. Without the passphrase, credential data is unreadable — the rest of the archive remains accessible.
+Credentials are encrypted with [age](https://age-encryption.org) and stored as a separately encrypted vault within the archive. You'll be prompted for a passphrase during backup and restore.
+
+**What's encrypted vs. readable:**
+
+| Content | Encrypted? | Notes |
+|---------|-----------|-------|
+| Agent files (SOUL.md, MEMORY.md, memory/) | ❌ No | Readable without password — inspect, verify, diff freely |
+| Config (gateway.yaml, cron jobs) | ❌ No | API keys in gateway.yaml are **REDACTED** before archiving |
+| Skills and scripts | ❌ No | Readable for portability |
+| Credential vault (API keys, tokens, .env files) | ✅ Yes | age-encrypted, requires passphrase |
+
+Without the passphrase, credential data is unreadable — the rest of the archive remains fully accessible. This means `info`, `verify`, and `diff` all work without any password. A restore without credentials still boots the agent — it just prompts for a new API key.
 
 On restore, credentials are decrypted and placed back automatically unless `--skip-credentials` is passed.
 
