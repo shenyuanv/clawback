@@ -1,0 +1,4 @@
+name: test-gateway
+host: localhost
+port: 8080
+workspace: /Users/test/clawd

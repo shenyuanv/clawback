@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.saddlebag
+.DS_Store
+
+# Internal dev files
+AGENTS.md
+CLAUDE.md
+DEV_STATE.md
+STAGE_COMPLETE.md

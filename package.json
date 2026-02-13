@@ -1,0 +1,37 @@
+{
+  "name": "saddlebag",
+  "version": "1.1.0",
+  "description": "Backup & Disaster Recovery for OpenClaw Agents",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "saddlebag": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "tar-stream": "^3.1.7",
+    "yaml": "^2.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/tar-stream": "^3.1.3",
+    "tsup": "^8.2.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}
