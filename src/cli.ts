@@ -50,14 +50,16 @@ export function createCli(): Command {
     .option('--include-credential <path>', 'Include extra credential file', (val: string, prev: string[]) => prev.concat([val]), [] as string[])
     .option('--include-data', 'Include large skill data directories')
     .option('--exclude <pattern>', 'Exclude files matching glob pattern', (val: string, prev: string[]) => prev.concat([val]), [] as string[])
-    .option('--encrypt', 'Encrypt the entire archive (requires password)')
+    .option('--encrypt', 'Encrypt entire archive — includes credentials automatically')
     .action(async (options) => {
       try {
+        // --encrypt implies --with-credentials
+        const withCredentials = options.withCredentials || options.encrypt;
         const result = await createBackup({
           workspace: options.workspace,
           output: options.output,
           exclude: options.exclude,
-          withCredentials: options.withCredentials,
+          withCredentials,
           includeData: options.includeData,
           password: options.password,
           includeCredential: options.includeCredential,

@@ -62,6 +62,8 @@ Options:
   --workspace <path>    Workspace path (auto-detected if not set)
   --output <path>       Output file path
   --with-credentials    Include encrypted credential vault
+  --encrypt             Encrypt entire archive (includes credentials automatically)
+  --password <pass>     Password for encryption (non-interactive)
   --include-data        Include large skill data directories
   --exclude <pattern>   Exclude files matching glob pattern (repeatable)
 ```
@@ -182,33 +184,49 @@ Works on macOS (Intel & ARM) and Linux (x86 & ARM). Path remapping handles diffe
 - `${HOME}` → user home directory
 - `${WORKSPACE}` → agent workspace root
 
-## Credential Backup
+## Encryption
 
-Clawback can optionally back up credentials (API keys, tokens, secrets) using the `--with-credentials` flag:
+Two levels of protection, depending on your threat model:
+
+### `--with-credentials` — Protect API Keys Only
 
 ```bash
 clawback backup --workspace ~/clawd --with-credentials
 ```
 
-Credentials are encrypted with [age](https://age-encryption.org) and stored as a separately encrypted vault within the archive. You'll be prompted for a passphrase during backup and restore.
+Includes credentials (API keys, tokens, .env files) as an encrypted vault inside the archive. Everything else stays readable — `info`, `verify`, `diff` work without a password.
 
-**What's encrypted vs. readable:**
+**Use when:** Backing up to your own machine or trusted storage. You want to inspect the backup freely but protect API keys.
 
-| Content | Encrypted? | Notes |
-|---------|-----------|-------|
-| Agent files (SOUL.md, MEMORY.md, memory/) | ❌ No | Readable without password — inspect, verify, diff freely |
-| Config (gateway.yaml, cron jobs) | ❌ No | API keys in gateway.yaml are **REDACTED** before archiving |
-| Skills and scripts | ❌ No | Readable for portability |
-| Credential vault (API keys, tokens, .env files) | ✅ Yes | age-encrypted, requires passphrase |
+### `--encrypt` — Encrypt Everything
 
-Without the passphrase, credential data is unreadable — the rest of the archive remains fully accessible. This means `info`, `verify`, and `diff` all work without any password. A restore without credentials still boots the agent — it just prompts for a new API key.
+```bash
+clawback backup --workspace ~/clawd --encrypt
+```
 
-On restore, credentials are decrypted and placed back automatically unless `--skip-credentials` is passed.
+Encrypts the entire archive (AES-256-GCM with scrypt key derivation). **Automatically includes credentials** — no need to add `--with-credentials`. All commands require the password:
+
+```bash
+clawback info backup.clawback --password "mypassword"
+clawback restore backup.clawback --workspace ~/agent --password "mypassword"
+```
+
+**Use when:** Storing backups on cloud drives, shared servers, or anywhere untrusted. Nothing is readable without the password.
+
+### Comparison
+
+| | No flags | `--with-credentials` | `--encrypt` |
+|---|---|---|---|
+| Agent files (SOUL.md, memory) | ✅ Readable | ✅ Readable | 🔒 Encrypted |
+| Config (gateway.yaml, cron) | ✅ Readable (keys REDACTED) | ✅ Readable (keys REDACTED) | 🔒 Encrypted |
+| Credentials (API keys, tokens) | ❌ Not included | 🔒 Encrypted vault | 🔒 Encrypted |
+| `info`/`verify`/`diff` without password | ✅ Works | ✅ Works | ❌ Needs password |
+| Restore without password | ✅ Prompts for API key | ✅ Prompts for API key | ❌ Needs password |
 
 ## Testing
 
 ```bash
-npm test                                        # Unit tests (vitest, 83 tests)
+npm test                                        # Unit tests (vitest, 90 tests)
 cd tests/docker && bash run-recovery-test.sh    # Docker integration test
 ```
 
