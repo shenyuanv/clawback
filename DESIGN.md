@@ -915,69 +915,31 @@ clawback backup --exclude memory/ --output my-agent-template.clawback
 
 ## v2 Roadmap
 
-### `clawback restore` → Agent Running (Full Integration)
+### `restore --run` ✅ DONE (v1.2)
 
-Restore becomes a complete "one-key" operation — not just files, but a running agent:
+One-key restore: extract → decrypt → detect OpenClaw → prompt API key → import cron → start gateway → health check → `✅ Agent running`.
 
-```bash
-clawback restore backup.clawback --workspace /agent
-# 1. Extract files + remap paths (v1)
-# 2. Decrypt credentials if present (v1.1 P0.7)
-# 3. Detect if OpenClaw installed → if not, install it (npm install -g openclaw)
-# 4. Write gateway config with API key (prompt if missing)
-# 5. Import cron jobs (openclaw cron add)
-# 6. Apply channel config (Slack/Telegram/Discord tokens)
-# 7. Start gateway (openclaw gateway start)
-# 8. Post-restore health check — verify agent responds
-# 9. Report: "Agent 'Cowboy' is running at localhost:3000"
-```
-
-### `clawback containerize` — Docker Deployment from Backup
-
-Generate a ready-to-run Docker deployment from any backup:
+### `containerize` (next)
 
 ```bash
-clawback containerize backup.clawback
-# → generates:
-#   deploy/
-#   ├── Dockerfile
-#   ├── docker-compose.yml
-#   ├── .env.example        # required credentials (user fills in)
-#   └── README.md           # how to run
-
-clawback containerize backup.clawback --with-credentials --password "xxx"
-# → same but .env is pre-filled with decrypted credentials
-
-# Then:
-cd deploy && docker compose up -d
-# → Agent running in container, accessible via configured channels
+clawback containerize backup.clawback [--with-credentials --password xxx]
 ```
+Generates `deploy/` with Dockerfile, docker-compose.yml, .env.example, README.
 
-**Dockerfile generates:**
-- Base: `node:22-slim`
-- Installs OpenClaw + clawback
-- Restores backup with path remapping
-- Configures gateway from environment variables
-- Imports cron jobs
-- Entrypoint: `openclaw gateway start`
-- Health check endpoint
+### Restore Awareness (planned)
 
-**docker-compose.yml includes:**
-- Environment variables for API keys (from `.env`)
-- Volume mount for persistent memory (so agent state survives container restart)
-- Restart policy: `unless-stopped`
-- Port mapping for gateway
+After restore + gateway start, inject wake event so the agent knows it was restored:
+- Timestamp of backup, current time, gap duration
+- Via `openclaw gateway wake --text "RESTORE NOTICE: ..."`
+- Without `--run`: generate `restore-wake.sh` for manual use
 
-### Additional v2 Features
+### Future Ideas
 
 | Feature | Description |
 |---------|-------------|
-| **Auto-install OpenClaw** | `restore` detects missing OpenClaw, offers to install |
-| **Cron job import** | Restore calls `openclaw cron add` for each backed-up job |
-| **Channel config handling** | Slack/Telegram/Discord tokens treated as credentials, restored to gateway config |
-| **Post-restore health check** | After starting gateway, verify agent responds to a test message |
-| **`clawback upgrade`** | Migrate backup format between clawback versions |
+| **`clawback upgrade`** | Migrate backup format between versions |
 | **Multi-agent workspaces** | Backup/restore multiple agents from one machine |
+| **Full-archive encryption** | `--encrypt` flag for privacy on untrusted storage |
 
 ---
 
@@ -1016,115 +978,3 @@ Cons:
 **If implemented later:** Add `--encrypt` as a separate flag (not replacing `--with-credentials`). Would need password plumbing through `info`/`verify`/`diff` commands.
 
 ---
-
-## v3 Roadmap — Multi-Platform Agent Portability
-
-**Goal:** Clawback becomes a universal agent backup/restore/migration tool — not limited to OpenClaw. Backup from one platform, restore to another.
-
-### Target Platforms
-
-| Platform | Architecture | Agent State Storage | Feasibility |
-|----------|-------------|-------------------|-------------|
-| **OpenClaw** | Node.js, single process, YAML config, flat MD files | Workspace dir (MD files), gateway YAML, cron JSON, SQLite memory index | ✅ Done (v1) |
-| **NanoClaw** | Node.js, container-isolated, Claude Agent SDK | `groups/{name}/CLAUDE.md` per-group memory, `data/messages.db` (SQLite), `data/sessions/` (SDK state), `data/state.json`, per-group `logs/` | ✅ Realistic — simpler than OpenClaw, ~700 lines total, flat file + SQLite |
-| **Claude Code** (standalone) | Bun/Node, local filesystem | `.claude/` dir, `CLAUDE.md`, conversation history in `~/.claude/` | ✅ Realistic — well-documented structure |
-| **Others (future)** | Varies | Research needed | 🔍 TBD |
-
-### Architecture Analysis: NanoClaw
-
-Reviewed source structure (via DeepWiki + GitHub):
-```
-nanoclaw/
-├── src/index.ts              # Main orchestrator (~700 lines)
-├── src/container-runner.ts   # Container spawning
-├── src/task-scheduler.ts     # Scheduled tasks
-├── src/db.ts                 # SQLite operations
-├── src/config.ts             # Config constants
-├── container/agent-runner.js # Claude SDK executor
-├── groups/{name}/CLAUDE.md   # Per-group memory (key state!)
-├── data/messages.db          # SQLite message history
-├── data/sessions/            # Agent SDK state
-├── data/registered_groups.json
-├── data/state.json           # Last processed timestamp
-└── .claude/skills/           # Skills
-```
-
-**What clawback would need to capture:**
-1. `groups/*/CLAUDE.md` — equivalent to our SOUL.md + MEMORY.md per-group
-2. `data/messages.db` — SQLite, portable as-is
-3. `data/sessions/` — Agent SDK conversation state
-4. `data/state.json` + `registered_groups.json` — runtime state
-5. `.claude/skills/` — skills (similar concept)
-6. Config is in code (config.ts), not external files — would need extraction
-
-**Cross-platform migration challenges:**
-- **State format translation:** OpenClaw uses flat MD files for memory; NanoClaw uses CLAUDE.md + SQLite. Need bidirectional converters.
-- **Config translation:** OpenClaw gateway YAML ↔ NanoClaw config.ts constants. Different schemas for channels, scheduling, etc.
-- **Channel credentials:** WhatsApp session state is platform-specific (baileys library state). May not be portable.
-- **Memory semantics:** OpenClaw has SOUL.md/MEMORY.md/HEARTBEAT.md separation. NanoClaw has single CLAUDE.md per group. Need intelligent merge/split.
-- **Cron → Tasks:** OpenClaw cron jobs ↔ NanoClaw task-scheduler entries. Different formats but same concept.
-
-### Proposed Approach
-
-**Phase 1: Platform Adapters**
-```
-src/adapters/
-├── openclaw.ts    # Current implementation, refactored
-├── nanoclaw.ts    # NanoClaw backup/restore adapter
-├── claude-code.ts # Standalone Claude Code adapter
-└── types.ts       # Universal agent state schema
-```
-
-**Phase 2: Universal Agent State Schema**
-Define a platform-neutral representation of agent state:
-```typescript
-interface UniversalAgentState {
-  identity: { name, personality, values }  // SOUL.md | CLAUDE.md
-  memory: { longTerm, daily[], domain[] }  // MEMORY.md | messages.db
-  config: { channels, scheduling, skills } // gateway.yaml | config.ts
-  credentials: { encrypted[] }             // platform-specific
-  metadata: { sourcePlatform, version }
-}
-```
-
-**Phase 3: Cross-Platform Migration**
-```bash
-# Backup from NanoClaw
-clawback backup --platform nanoclaw --workspace ~/nanoclaw
-
-# Restore to OpenClaw
-clawback restore backup.clawback --platform openclaw --workspace ~/clawd
-
-# Or: migrate directly
-clawback migrate --from nanoclaw:~/nanoclaw --to openclaw:~/clawd
-```
-
-### Feasibility Assessment
-
-**NanoClaw support: HIGH feasibility**
-- Simple architecture (~700 lines), flat files + SQLite
-- Similar concepts (memory, skills, scheduled tasks)
-- Main challenge: memory format translation (CLAUDE.md ↔ structured MD files)
-
-**Claude Code standalone: HIGH feasibility**
-- Even simpler (local files + conversation cache)
-- Well-documented `.claude/` directory structure
-
-**General cross-platform: MEDIUM feasibility**
-- The universal schema is the hard part — lossy translation between different memory models
-- Channel credentials are platform-specific and may not transfer
-- But core agent identity (personality, memories, knowledge) IS portable
-
----
-
-## Open Questions
-
-1. **Skill inclusion policy:** Include all custom skills by default, or require opt-in? (Leaning: include by default, `--exclude` for large ones)
-2. **Incremental backups:** Worth adding in v1, or just full snapshots? (Leaning: full only for simplicity)
-3. **Backup rotation:** Should Clawback manage old backups, or leave that to the user? (Leaning: user's problem for v1)
-4. **OpenClaw integration:** Ship as a built-in OpenClaw command (`openclaw backup`) or standalone tool? (Leaning: standalone first, propose upstream later)
-5. **Naming:** Is "Clawback" a good public-facing name or too niche? Alternatives: `agentpack`, `agentsave`, `clawback`
-
----
-
-*"A good cowboy keeps their clawback packed. You never know when you'll need to ride."* 🐴

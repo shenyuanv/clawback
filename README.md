@@ -7,7 +7,7 @@ Clawback creates portable `.clawback` archives of your agent's identity, memory,
 ## Quickstart (5 lines)
 
 ```bash
-npm install -g github:shenyuanv/clawback
+npm install -g clawback-ai
 clawback backup --workspace ~/clawd
 clawback verify cowboy-2026-02-12.clawback
 clawback restore cowboy-2026-02-12.clawback --workspace ~/agent --force --run
@@ -16,7 +16,7 @@ clawback restore cowboy-2026-02-12.clawback --workspace ~/agent --force --run
 ## Install
 
 ```bash
-npm install -g github:shenyuanv/clawback
+npm install -g clawback-ai
 ```
 
 Or use directly:
