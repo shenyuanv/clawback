@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { createWriteStream, readFileSync, statSync, existsSync } from 'node:fs';
+import { createWriteStream, readFileSync, writeFileSync, statSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import { createGzip } from 'node:zlib';
@@ -28,6 +28,7 @@ export interface BackupOptions {
   includeData?: boolean;
   password?: string;
   includeCredential?: string[];
+  encrypt?: boolean;
   prompt?: PromptProvider;
 }
 
@@ -260,6 +261,22 @@ export async function createBackup(options: BackupOptions): Promise<BackupResult
   const output = createWriteStream(outputPath);
 
   await pipeline(pack, gzip, output);
+
+  // 6. Encrypt full archive if --encrypt
+  if (options.encrypt) {
+    const { encryptArchive } = await import('./encrypt.js');
+    let encryptPassword = options.password;
+    if (!encryptPassword) {
+      encryptPassword = await promptForPassword(
+        'Enter encryption password: ',
+        true,
+        options.prompt,
+      );
+    }
+    const archiveData = readFileSync(outputPath);
+    const encrypted = encryptArchive(archiveData, encryptPassword);
+    writeFileSync(outputPath, encrypted);
+  }
 
   return {
     outputPath,

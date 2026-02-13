@@ -10,10 +10,27 @@ import { getArchiveInfo, formatInfo } from './info.js';
 import { discoverWorkspace } from './discovery.js';
 import { containerize } from './containerize.js';
 import { writeStdout, writeStderr, writeLine } from './output.js';
+import { resolveArchive, cleanupTempArchive, type ResolvedArchive } from './archive-reader.js';
+import { promptForPassword } from './credentials.js';
 
 const pkg = JSON.parse(
   readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '..', 'package.json'), 'utf-8'),
 );
+
+/**
+ * Resolve archive path — if encrypted, prompt for password and decrypt to temp file.
+ */
+async function resolveArchivePath(file: string, password?: string): Promise<ResolvedArchive> {
+  try {
+    return resolveArchive(file, password);
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message === 'ENCRYPTED_ARCHIVE') {
+      const pw = await promptForPassword('Enter decryption password: ', false);
+      return resolveArchive(file, pw);
+    }
+    throw err;
+  }
+}
 
 export function createCli(): Command {
   const program = new Command();
@@ -33,6 +50,7 @@ export function createCli(): Command {
     .option('--include-credential <path>', 'Include extra credential file', (val: string, prev: string[]) => prev.concat([val]), [] as string[])
     .option('--include-data', 'Include large skill data directories')
     .option('--exclude <pattern>', 'Exclude files matching glob pattern', (val: string, prev: string[]) => prev.concat([val]), [] as string[])
+    .option('--encrypt', 'Encrypt the entire archive (requires password)')
     .action(async (options) => {
       try {
         const result = await createBackup({
@@ -43,6 +61,7 @@ export function createCli(): Command {
           includeData: options.includeData,
           password: options.password,
           includeCredential: options.includeCredential,
+          encrypt: options.encrypt,
         });
         await writeLine(`Backup created: ${result.outputPath}`);
         await writeLine(`  Files: ${result.fileCount}`);
@@ -69,8 +88,10 @@ export function createCli(): Command {
     .option('--password <password>', 'Password for credential vault (non-interactive)')
     .option('--run', 'Start OpenClaw gateway after restore')
     .action(async (file, options) => {
+      let resolved: ResolvedArchive | null = null;
       try {
-        const result = await restoreBackup(file, {
+        resolved = await resolveArchivePath(file, options.password);
+        const result = await restoreBackup(resolved.path, {
           workspace: options.workspace,
           dryRun: options.dryRun,
           force: options.force,
@@ -119,15 +140,20 @@ export function createCli(): Command {
         const message = err instanceof Error ? err.message : String(err);
         await writeStderr(`Error: ${message}\n`);
         process.exit(1);
+      } finally {
+        if (resolved) cleanupTempArchive(resolved);
       }
     });
 
   program
     .command('verify <file>')
     .description('Verify backup archive integrity')
-    .action(async (file) => {
+    .option('--password <password>', 'Password for encrypted archive')
+    .action(async (file, options) => {
+      let resolved: ResolvedArchive | null = null;
       try {
-        const result = await verifyArchive(file);
+        resolved = await resolveArchivePath(file, options.password);
+        const result = await verifyArchive(resolved.path);
 
         if (result.error) {
           await writeStderr(`Error: ${result.error}\n`);
@@ -157,6 +183,8 @@ export function createCli(): Command {
         const message = err instanceof Error ? err.message : String(err);
         await writeStderr(`Error: ${message}\n`);
         process.exit(1);
+      } finally {
+        if (resolved) cleanupTempArchive(resolved);
       }
     });
 
@@ -164,15 +192,18 @@ export function createCli(): Command {
     .command('diff <file> [fileB]')
     .description('Compare backup to live state or two backups')
     .option('--workspace <path>', 'Workspace to compare against')
+    .option('--password <password>', 'Password for encrypted archive')
     .action(async (file, fileB, options) => {
+      let resolved: ResolvedArchive | null = null;
+      let resolvedB: ResolvedArchive | null = null;
       try {
+        resolved = await resolveArchivePath(file, options.password);
         let result;
         if (fileB) {
-          // Two archives
-          result = await diffArchiveVsArchive(file, fileB);
+          resolvedB = await resolveArchivePath(fileB, options.password);
+          result = await diffArchiveVsArchive(resolved.path, resolvedB.path);
         } else {
-          // Archive vs live workspace
-            const workspace = options.workspace
+          const workspace = options.workspace
             ? options.workspace
             : discoverWorkspace({});
           if (!workspace) {
@@ -181,7 +212,7 @@ export function createCli(): Command {
             );
             process.exit(1);
           }
-          result = await diffArchiveVsWorkspace(file, workspace);
+          result = await diffArchiveVsWorkspace(resolved.path, workspace);
         }
         await writeStdout(`${formatDiff(result)}\n`);
         process.exit(0);
@@ -189,6 +220,9 @@ export function createCli(): Command {
         const message = err instanceof Error ? err.message : String(err);
         await writeStderr(`Error: ${message}\n`);
         process.exit(1);
+      } finally {
+        if (resolved) cleanupTempArchive(resolved);
+        if (resolvedB) cleanupTempArchive(resolvedB);
       }
     });
 
@@ -229,15 +263,20 @@ export function createCli(): Command {
   program
     .command('info <file>')
     .description('Show backup summary information')
-    .action(async (file) => {
+    .option('--password <password>', 'Password for encrypted archive')
+    .action(async (file, options) => {
+      let resolved: ResolvedArchive | null = null;
       try {
-        const info = await getArchiveInfo(file);
+        resolved = await resolveArchivePath(file, options.password);
+        const info = await getArchiveInfo(resolved.path);
         await writeStdout(`${formatInfo(info)}\n`);
         process.exit(0);
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
         await writeStderr(`Error: ${message}\n`);
         process.exit(1);
+      } finally {
+        if (resolved) cleanupTempArchive(resolved);
       }
     });
 
