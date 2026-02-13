@@ -42,15 +42,14 @@ export async function containerize(
   // Generate Dockerfile
   const dockerfile = `FROM node:22-slim
 
-# Install OpenClaw
-RUN npm install -g openclaw
+# Install OpenClaw and Clawback
+RUN npm install -g openclaw github:shenyuanv/clawback
 
 # Copy backup archive
 COPY ${archiveFilename} /tmp/${archiveFilename}
 
 # Restore agent
-RUN mkdir -p /workspace && \\
-    npx clawback restore /tmp/${archiveFilename} --workspace /workspace --force && \\
+RUN clawback restore /tmp/${archiveFilename} --workspace /workspace --force && \\
     rm /tmp/${archiveFilename}
 
 COPY entrypoint.sh /entrypoint.sh
@@ -83,7 +82,6 @@ exec openclaw gateway start
 
   // Generate docker-compose.yml
   const compose = {
-    version: '3.8',
     services: {
       agent: {
         build: '.',
