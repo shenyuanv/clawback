@@ -981,6 +981,42 @@ cd deploy && docker compose up -d
 
 ---
 
+## Design Decision: Encryption Scope
+
+**Decision: Encrypt credentials only (not full archive)**
+**Date:** 2026-02-13
+
+### Current behavior
+`--with-credentials` encrypts a small vault (~11KB) with age. All other files remain readable in the archive.
+
+### Why credentials-only is the right default
+
+**Pros:**
+- Fast — only encrypts a small vault, backup/restore stays instant
+- Partial access — `info`, `verify`, `diff` all work without any password
+- Restore without credentials still works (agent boots, just needs new API key)
+- Most files (SOUL.md, memory, skills) aren't secrets — encrypting them adds friction for no security gain
+- Lost password = lose credentials only; agent state is still recoverable
+
+**Full-archive encryption (considered, deprioritized):**
+
+Pros:
+- Full privacy — archive is opaque without password
+- Simpler mental model: "encrypted = safe to store anywhere"
+- Protects memory files that might contain personal context
+
+Cons:
+- Can't inspect without password — `info`, `verify`, `diff` all need password or become useless
+- Lost password = total loss (no partial recovery)
+- Password fatigue — every operation needs the password
+- Slower for large archives
+
+**Threat model:** Primary scenario is "I lost my machine, restore on a new one" — not "adversary has my backup file." API keys are the actual damage if leaked; SOUL.md is not a secret. For untrusted cloud storage where memory privacy matters, a future `--encrypt` flag could encrypt the full archive as an opt-in option.
+
+**If implemented later:** Add `--encrypt` as a separate flag (not replacing `--with-credentials`). Would need password plumbing through `info`/`verify`/`diff` commands.
+
+---
+
 ## v3 Roadmap — Multi-Platform Agent Portability
 
 **Goal:** Saddlebag becomes a universal agent backup/restore/migration tool — not limited to OpenClaw. Backup from one platform, restore to another.
