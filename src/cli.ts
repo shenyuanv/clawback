@@ -8,6 +8,7 @@ import { verifyArchive } from './verify.js';
 import { diffArchiveVsWorkspace, diffArchiveVsArchive, formatDiff } from './diff.js';
 import { getArchiveInfo, formatInfo } from './info.js';
 import { discoverWorkspace } from './discovery.js';
+import { containerize } from './containerize.js';
 import { writeStdout, writeStderr, writeLine } from './output.js';
 
 const pkg = JSON.parse(
@@ -183,6 +184,30 @@ export function createCli(): Command {
           result = await diffArchiveVsWorkspace(file, workspace);
         }
         await writeStdout(`${formatDiff(result)}\n`);
+        process.exit(0);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        await writeStderr(`Error: ${message}\n`);
+        process.exit(1);
+      }
+    });
+
+  program
+    .command('containerize <file>')
+    .description('Generate Docker deployment files from a backup')
+    .option('--output <dir>', 'Output directory', 'deploy')
+    .action(async (file, options) => {
+      try {
+        const result = await containerize(file, { outputDir: options.output });
+        await writeLine(`Generated Docker deployment for agent "${result.agentName}":`);
+        for (const f of result.files) {
+          await writeLine(`  ${result.outputDir}/${f}`);
+        }
+        await writeLine('');
+        await writeLine('Next steps:');
+        await writeLine(`  cd ${result.outputDir}`);
+        await writeLine('  cp .env.example .env   # fill in your API key');
+        await writeLine('  docker compose up -d');
         process.exit(0);
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
