@@ -3,37 +3,16 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createBackup } from './backup.js';
-import { restoreBackup } from './restore.js';
+import { restoreBackup, postRestoreRun } from './restore.js';
 import { verifyArchive } from './verify.js';
 import { diffArchiveVsWorkspace, diffArchiveVsArchive, formatDiff } from './diff.js';
 import { getArchiveInfo, formatInfo } from './info.js';
 import { discoverWorkspace } from './discovery.js';
+import { writeStdout, writeStderr, writeLine } from './output.js';
 
 const pkg = JSON.parse(
   readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '..', 'package.json'), 'utf-8'),
 );
-
-function writeStdout(text: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    process.stdout.write(text, (err) => {
-      if (err) reject(err);
-      else resolve();
-    });
-  });
-}
-
-function writeStderr(text: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    process.stderr.write(text, (err) => {
-      if (err) reject(err);
-      else resolve();
-    });
-  });
-}
-
-async function writeLine(text: string): Promise<void> {
-  await writeStdout(`${text}\n`);
-}
 
 export function createCli(): Command {
   const program = new Command();
@@ -69,9 +48,13 @@ export function createCli(): Command {
         await writeLine(`  Size: ${result.totalBytes} bytes`);
         process.exit(0);
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
-        await writeStderr(`Error: ${message}\n`);
-        process.exit(1);
+        if (err instanceof Error && err.message === 'OPENCLAW_NOT_FOUND') {
+          process.exit(1);
+        } else {
+          const message = err instanceof Error ? err.message : String(err);
+          await writeStderr(`Error: ${message}\n`);
+          process.exit(1);
+        }
       }
     });
 
@@ -83,6 +66,7 @@ export function createCli(): Command {
     .option('--force', 'Skip confirmation prompt')
     .option('--skip-credentials', 'Skip credential restoration')
     .option('--password <password>', 'Password for credential vault (non-interactive)')
+    .option('--run', 'Start OpenClaw gateway after restore')
     .action(async (file, options) => {
       try {
         const result = await restoreBackup(file, {
@@ -123,6 +107,11 @@ export function createCli(): Command {
           await writeLine(
             '⚠️  If OpenClaw overwrites your files on first boot, run: bash restore-fixup.sh',
           );
+        }
+
+        if (!result.dryRun && options.run) {
+          await writeLine('');
+          await postRestoreRun(result.targetDir, result.agentName);
         }
         process.exit(0);
       } catch (err: unknown) {

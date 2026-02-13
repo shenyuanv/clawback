@@ -10,8 +10,7 @@ Saddlebag creates portable `.saddlebag` archives of your agent's identity, memor
 npm install -g saddlebag
 saddlebag backup --workspace ~/clawd
 saddlebag verify cowboy-2026-02-12.saddlebag
-saddlebag restore cowboy-2026-02-12.saddlebag --workspace ~/agent --force
-cd ~/agent && openclaw gateway start
+saddlebag restore cowboy-2026-02-12.saddlebag --workspace ~/agent --force --run
 ```
 
 ## Install
@@ -70,9 +69,27 @@ Options:
   --dry-run             Show what would change without writing
   --force               Skip confirmation prompt
   --skip-credentials    Skip credential restoration
+  --run                 Start OpenClaw gateway after restore
+  --password <pass>     Password for credential vault (non-interactive)
 ```
 
 Path remapping is automatic — absolute paths in config files are rewritten to match the new machine's HOME and workspace paths.
+
+#### One-Key Restore (`--run`)
+
+The `--run` flag turns restore into a complete recovery operation:
+
+1. Extracts files and remaps paths
+2. Decrypts credentials (if present)
+3. Checks that OpenClaw is installed
+4. Prompts for an API key if the gateway config has no valid provider key
+5. Imports cron jobs from the backup
+6. Starts the gateway
+7. Runs a health check and prints `✅ Agent '<name>' is running`
+
+```bash
+saddlebag restore backup.saddlebag --workspace ~/agent --force --run
+```
 
 ### `saddlebag verify <file>`
 
@@ -143,7 +160,7 @@ On restore, credentials are decrypted and placed back automatically unless `--sk
 ## Testing
 
 ```bash
-npm test                                        # Unit tests (vitest, 70 tests)
+npm test                                        # Unit tests (vitest, 77 tests)
 cd tests/docker && bash run-recovery-test.sh    # Docker integration test
 ```
 
@@ -170,8 +187,7 @@ Saddlebag is designed for **disaster recovery** — the original is dead, you re
 > You're traveling. Your laptop dies. You have a `.saddlebag` file on a USB drive (or cloud storage). On any new machine with Node.js:
 
 ```bash
-npx saddlebag restore cowboy-backup.saddlebag --workspace ~/agent --force
-cd ~/agent && openclaw gateway start
+npx saddlebag restore cowboy-backup.saddlebag --workspace ~/agent --force --run
 ```
 
 Your agent is back, with all its memories, personality, and configuration intact.

@@ -10,7 +10,10 @@ import { join, dirname, basename, resolve } from 'node:path';
 import { createReadStream } from 'node:fs';
 import { createGunzip } from 'node:zlib';
 import { pipeline } from 'node:stream/promises';
+import { execSync } from 'node:child_process';
+import { createInterface } from 'node:readline/promises';
 import * as tar from 'tar-stream';
+import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { getArchivePath } from './backup.js';
 import { applyRemap, unapplyRemap, type EnvMap } from './pathmap.js';
 import type { Manifest } from './manifest.js';
@@ -25,6 +28,7 @@ import {
   type PromptProvider,
   type CredentialVaultPayload,
 } from './credentials.js';
+import { writeLine } from './output.js';
 
 /** Files that may contain hardcoded paths needing remapping */
 const PATH_REMAP_FILES = new Set([
@@ -136,6 +140,7 @@ export interface RestoreResult {
   identityWarnings: string[];
   missingDeps: string[];
   dryRun: boolean;
+  agentName: string;
 }
 
 /**
@@ -370,5 +375,118 @@ export async function restoreBackup(
     identityWarnings,
     missingDeps,
     dryRun: options.dryRun ?? false,
+    agentName: manifest.agent.name,
   };
+}
+
+function hasValidProviderKey(parsed: unknown): boolean {
+  if (!parsed || typeof parsed !== 'object') return false;
+  const obj = parsed as Record<string, unknown>;
+  const providers = ['anthropic', 'openai'];
+  for (const provider of providers) {
+    const section = obj[provider];
+    if (!section || typeof section !== 'object') continue;
+    const apiKey = (section as Record<string, unknown>).apiKey;
+    if (typeof apiKey === 'string' && apiKey.trim() && apiKey.trim() !== 'REDACTED') {
+      return true;
+    }
+  }
+  return false;
+}
+
+async function promptForAnthropicKey(): Promise<string> {
+  const input = process.stdin;
+  const output = process.stdout;
+  const rl = createInterface({ input, output });
+  try {
+    return await rl.question('Enter your Anthropic API key (or press Enter to skip): ');
+  } finally {
+    rl.close();
+  }
+}
+
+function ensureAnthropicKey(parsed: unknown, key: string): unknown {
+  if (!parsed || typeof parsed !== 'object') {
+    return { anthropic: { apiKey: key } };
+  }
+  const obj = parsed as Record<string, unknown>;
+  const section = obj.anthropic;
+  if (!section || typeof section !== 'object') {
+    obj.anthropic = { apiKey: key };
+    return obj;
+  }
+  (section as Record<string, unknown>).apiKey = key;
+  return obj;
+}
+
+function importCronJobs(
+  workspace: string,
+  cronPath: string,
+): number {
+  if (!existsSync(cronPath)) return 0;
+  const raw = readFileSync(cronPath, 'utf-8').trim();
+  if (!raw) return 0;
+  let jobs: unknown;
+  try {
+    jobs = JSON.parse(raw);
+  } catch {
+    return 0;
+  }
+  if (!Array.isArray(jobs) || jobs.length === 0) return 0;
+  let imported = 0;
+  for (const job of jobs) {
+    const payload = JSON.stringify(job);
+    execSync(`openclaw cron add --json '${payload}'`, { cwd: workspace, stdio: 'pipe' });
+    imported += 1;
+  }
+  return imported;
+}
+
+export async function postRestoreRun(
+  workspace: string,
+  agentName: string,
+): Promise<void> {
+  try {
+    execSync('openclaw --version', { stdio: 'pipe' });
+  } catch {
+    await writeLine('OpenClaw not found. Install it: npm install -g openclaw');
+    const err = new Error('OPENCLAW_NOT_FOUND');
+    (err as Error & { saddlebagExitCode?: number }).saddlebagExitCode = 1;
+    throw err;
+  }
+
+  const gatewayPath = join(workspace, 'config', 'gateway.yaml');
+  if (existsSync(gatewayPath)) {
+    const current = readFileSync(gatewayPath, 'utf-8');
+    let parsed: unknown = null;
+    try {
+      parsed = parseYaml(current);
+    } catch {
+      parsed = null;
+    }
+    if (!hasValidProviderKey(parsed)) {
+      const key = (await promptForAnthropicKey()).trim();
+      if (key) {
+        const updated = ensureAnthropicKey(parsed, key);
+        writeFileSync(gatewayPath, stringifyYaml(updated));
+      }
+    }
+  }
+
+  const cronPath = join(workspace, 'config', 'cron-jobs.json');
+  const imported = importCronJobs(workspace, cronPath);
+  if (imported > 0) {
+    await writeLine(`Imported ${imported} cron jobs.`);
+  }
+
+  execSync('openclaw gateway start', { cwd: workspace, stdio: 'pipe' });
+
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+
+  try {
+    execSync('openclaw gateway status', { cwd: workspace, stdio: 'pipe' });
+    await writeLine(`✅ Agent ${agentName} is running`);
+  } catch {
+    await writeLine('⚠️ Gateway started but health check failed — check logs');
+  }
 }
