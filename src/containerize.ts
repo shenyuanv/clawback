@@ -39,11 +39,12 @@ export async function containerize(
   // Copy archive into deploy folder
   copyFileSync(archivePath, join(outputDir, archiveFilename));
 
-  // Generate Dockerfile
+  // Generate Dockerfile — install git for GitHub-based clawback install
   const dockerfile = `FROM node:22-slim
 
-# Install OpenClaw and Clawback
-RUN npm install -g openclaw github:shenyuanv/clawback
+# Install git (needed for GitHub-based npm install) and OpenClaw + Clawback
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/* && \\
+    npm install -g openclaw git+https://github.com/shenyuanv/clawback.git
 
 # Copy backup archive
 COPY ${archiveFilename} /tmp/${archiveFilename}
