@@ -196,18 +196,28 @@ export function createCli(): Command {
     .command('containerize <file>')
     .description('Generate Docker deployment files from a backup')
     .option('--output <dir>', 'Output directory', 'deploy')
+    .option('--run', 'Build and run container interactively (OpenClaw wizard handles setup)')
     .action(async (file, options) => {
       try {
-        const result = await containerize(file, { outputDir: options.output });
+        const result = await containerize(file, {
+          outputDir: options.output,
+          run: options.run,
+        });
         await writeLine(`Generated Docker deployment for agent "${result.agentName}":`);
         for (const f of result.files) {
           await writeLine(`  ${result.outputDir}/${f}`);
         }
-        await writeLine('');
-        await writeLine('Next steps:');
-        await writeLine(`  cd ${result.outputDir}`);
-        await writeLine('  cp .env.example .env   # fill in your API key');
-        await writeLine('  docker compose up -d');
+        if (!options.run) {
+          await writeLine('');
+          await writeLine('Next steps:');
+          await writeLine(`  cd ${result.outputDir}`);
+          await writeLine('  docker compose run -it agent   # first run: OpenClaw setup wizard');
+          await writeLine('  docker compose up -d            # then run in background');
+        } else if (result.started) {
+          await writeLine('');
+          await writeLine(`✅ Agent "${result.agentName}" is running in Docker`);
+          await writeLine('To run in background: docker compose up -d');
+        }
         process.exit(0);
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);

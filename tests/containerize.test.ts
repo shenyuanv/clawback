@@ -46,13 +46,23 @@ describe('containerize', () => {
     expect(result.agentName).toBe('TestBot');
     expect(result.files).toContain('Dockerfile');
     expect(result.files).toContain('docker-compose.yml');
-    expect(result.files).toContain('.env.example');
     expect(result.files).toContain('README.md');
     expect(result.files).toContain('entrypoint.sh');
 
     for (const f of result.files) {
       expect(existsSync(join(outputDir, f))).toBe(true);
     }
+  });
+
+  it('does not generate .env.example (OpenClaw wizard handles setup)', async () => {
+    const tmp = createTempDir();
+    const archive = createTestArchive(tmp);
+    const outputDir = join(tmp, 'deploy');
+
+    await containerize(archive, { outputDir });
+
+    expect(existsSync(join(outputDir, '.env.example'))).toBe(false);
+    expect(existsSync(join(outputDir, '.env'))).toBe(false);
   });
 
   it('Dockerfile has correct base image and COPY', async () => {
@@ -69,7 +79,7 @@ describe('containerize', () => {
     expect(dockerfile).toContain('entrypoint.sh');
   });
 
-  it('docker-compose.yml is valid YAML with required keys', async () => {
+  it('docker-compose.yml has config volume and tty for wizard', async () => {
     const tmp = createTempDir();
     const archive = createTestArchive(tmp);
     const outputDir = join(tmp, 'deploy');
@@ -82,19 +92,10 @@ describe('containerize', () => {
 
     expect(services.agent).toBeDefined();
     expect(services.agent.restart).toBe('unless-stopped');
-    expect(services.agent.env_file).toBe('.env');
+    expect(services.agent.stdin_open).toBe(true);
+    expect(services.agent.tty).toBe(true);
     expect(services.agent.volumes).toContain('./data:/workspace/memory');
-  });
-
-  it('.env.example contains API key placeholder', async () => {
-    const tmp = createTempDir();
-    const archive = createTestArchive(tmp);
-    const outputDir = join(tmp, 'deploy');
-
-    await containerize(archive, { outputDir });
-
-    const env = readFileSync(join(outputDir, '.env.example'), 'utf-8');
-    expect(env).toContain('ANTHROPIC_API_KEY=your-key-here');
+    expect(services.agent.volumes).toContain('./config:/workspace/config');
   });
 
   it('copies the archive into deploy folder', async () => {
@@ -105,5 +106,17 @@ describe('containerize', () => {
     await containerize(archive, { outputDir });
 
     expect(existsSync(join(outputDir, 'test.clawback'))).toBe(true);
+  });
+
+  it('entrypoint starts gateway (wizard handles first-run setup)', async () => {
+    const tmp = createTempDir();
+    const archive = createTestArchive(tmp);
+    const outputDir = join(tmp, 'deploy');
+
+    await containerize(archive, { outputDir });
+
+    const entrypoint = readFileSync(join(outputDir, 'entrypoint.sh'), 'utf-8');
+    expect(entrypoint).toContain('openclaw gateway start');
+    expect(entrypoint).not.toContain('ANTHROPIC_API_KEY');
   });
 });
