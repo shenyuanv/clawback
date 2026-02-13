@@ -12,7 +12,7 @@ import { pipeline } from 'node:stream/promises';
 const FIXTURES = resolve(import.meta.dirname, 'fixtures');
 const MOCK_WORKSPACE = resolve(FIXTURES, 'mock-workspace');
 
-/** Helper: extract all entries from a .saddlebag (tar.gz) file */
+/** Helper: extract all entries from a .clawback (tar.gz) file */
 async function extractArchive(
   archivePath: string,
 ): Promise<Map<string, Buffer>> {
@@ -56,7 +56,7 @@ describe('backup integration', () => {
   it('creates valid archive from workspace — file created, manifest valid, checksums verify', async () => {
     const outputPath = join(
       tmpdir(),
-      `saddlebag-integration-${Date.now()}.saddlebag`,
+      `clawback-integration-${Date.now()}.clawback`,
     );
     tempFiles.push(outputPath);
 
@@ -77,7 +77,7 @@ describe('backup integration', () => {
     const manifest = JSON.parse(manifestStr);
 
     // 3. Manifest is valid JSON with required fields
-    expect(manifest.saddlebag_version).toBe('1.0');
+    expect(manifest.clawback_version).toBe('1.0');
     expect(manifest.agent).toBeDefined();
     expect(manifest.agent.name).toBe('TestBot');
     expect(manifest.source).toBeDefined();

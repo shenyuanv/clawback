@@ -18,7 +18,7 @@ export function createCli(): Command {
   const program = new Command();
 
   program
-    .name('saddlebag')
+    .name('clawback')
     .description('Backup & Disaster Recovery for OpenClaw Agents')
     .version(pkg.version);
 

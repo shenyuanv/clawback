@@ -86,7 +86,7 @@ describe('manifest', () => {
 
   it('excludes node_modules and .git', () => {
     // Create a temp workspace with node_modules/ and .git/
-    const tmpWorkspace = mkdtempSync(join(tmpdir(), 'saddlebag-test-excl-'));
+    const tmpWorkspace = mkdtempSync(join(tmpdir(), 'clawback-test-excl-'));
     writeFileSync(join(tmpWorkspace, 'SOUL.md'), '# Test Soul\n');
     mkdirSync(join(tmpWorkspace, 'node_modules', 'some-pkg'), {
       recursive: true,
@@ -106,11 +106,11 @@ describe('manifest', () => {
     expect(paths).not.toContain('.git/config');
     expect(paths).not.toContain('.git/objects');
 
-    // Also verify .saddlebag files are excluded
-    writeFileSync(join(tmpWorkspace, 'test.saddlebag'), 'archive data');
+    // Also verify .clawback files are excluded
+    writeFileSync(join(tmpWorkspace, 'test.clawback'), 'archive data');
     const manifest2 = createManifest({ workspace: tmpWorkspace });
     const paths2 = manifest2.files.map((f) => f.path);
-    expect(paths2).not.toContain('test.saddlebag');
+    expect(paths2).not.toContain('test.clawback');
   });
 
   it('--exclude pattern removes matching files', () => {
@@ -149,7 +149,7 @@ describe('manifest', () => {
     const manifest = createManifest({ workspace: MOCK_WORKSPACE });
 
     // Required top-level fields
-    expect(manifest.saddlebag_version).toBe('1.0');
+    expect(manifest.clawback_version).toBe('1.0');
     expect(manifest.created).toBeTruthy();
     expect(new Date(manifest.created).toISOString()).toBe(manifest.created);
 
@@ -182,7 +182,7 @@ describe('manifest', () => {
 
   it('handles empty memory/ directory gracefully', () => {
     // Create a temp workspace with an empty memory/ dir
-    const tmpWorkspace = mkdtempSync(join(tmpdir(), 'saddlebag-test-empty-'));
+    const tmpWorkspace = mkdtempSync(join(tmpdir(), 'clawback-test-empty-'));
     writeFileSync(join(tmpWorkspace, 'SOUL.md'), '# Test Soul\n');
     mkdirSync(join(tmpWorkspace, 'memory'));
 

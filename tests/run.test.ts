@@ -29,7 +29,7 @@ const { postRestoreRun } = await import('../src/restore.js');
 const tempDirs: string[] = [];
 
 function createWorkspace(): string {
-  const dir = mkdtempSync(join(tmpdir(), 'saddlebag-run-test-'));
+  const dir = mkdtempSync(join(tmpdir(), 'clawback-run-test-'));
   tempDirs.push(dir);
   mkdirSync(join(dir, 'config'), { recursive: true });
   return dir;

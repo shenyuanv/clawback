@@ -1,8 +1,8 @@
-# 🐴 Saddlebag — Backup & Disaster Recovery for OpenClaw Agents
+# 🐴 Clawback — Backup & Disaster Recovery for OpenClaw Agents
 
 > *One command to save. One command to ride again.*
 
-**Codename:** Saddlebag
+**Codename:** Clawback
 **Author:** Cowboy 🤠 + Yuan
 **Created:** 2026-02-11
 **Status:** Draft v0.2
@@ -14,17 +14,17 @@
 An open-source CLI tool that backs up an OpenClaw agent's complete state into a single portable file, and restores it on the same or a different machine.
 
 ```bash
-npm install -g saddlebag
+npm install -g clawback
 
 # Backup
-saddlebag backup
-# → cowboy-2026-02-11.saddlebag (one file, everything inside)
+clawback backup
+# → cowboy-2026-02-11.clawback (one file, everything inside)
 
 # Restore (same machine)
-saddlebag restore cowboy-2026-02-11.saddlebag
+clawback restore cowboy-2026-02-11.clawback
 
 # Restore (new machine, different paths)
-saddlebag restore cowboy-2026-02-11.saddlebag --workspace ~/my-agent
+clawback restore cowboy-2026-02-11.clawback --workspace ~/my-agent
 ```
 
 That's it. No accounts, no cloud service, no configuration required.
@@ -48,7 +48,7 @@ If your disk dies, your agent dies with it.
 
 ### In Scope (v1)
 
-- **Backup** all OpenClaw agent state into a single `.saddlebag` file
+- **Backup** all OpenClaw agent state into a single `.clawback` file
 - **Restore** on same or different machine (macOS + Linux)
 - **Path remapping** for cross-environment restore
 - **Credential encryption** (credentials always encrypted, even within the archive)
@@ -61,7 +61,7 @@ If your disk dies, your agent dies with it.
 
 - Cloud storage backends (save the file wherever you want — NAS, S3, USB, Dropbox)
 - Agent-assisted merge / conflict resolution
-- Auto-scheduled backups (cron it yourself: `0 3 * * * saddlebag backup`)
+- Auto-scheduled backups (cron it yourself: `0 3 * * * clawback backup`)
 - Multi-agent workspaces
 - Frameworks other than OpenClaw
 - Real-time sync or replication
@@ -70,7 +70,7 @@ If your disk dies, your agent dies with it.
 
 ## What Gets Backed Up
 
-Saddlebag auto-discovers the OpenClaw workspace and captures everything the agent needs:
+Clawback auto-discovers the OpenClaw workspace and captures everything the agent needs:
 
 ### Agent Files (always included)
 
@@ -105,7 +105,7 @@ SSH keys             — If referenced by agent
 Platform credentials — macOS Keychain / Linux keyring entries used by agent
 ```
 
-Credentials are **opt-in** (`saddlebag backup --with-credentials`) and always stored in a separately encrypted vault within the archive. The rest of the backup is readable without the credential key.
+Credentials are **opt-in** (`clawback backup --with-credentials`) and always stored in a separately encrypted vault within the archive. The rest of the backup is readable without the credential key.
 
 ### Skills (configurable)
 
@@ -119,10 +119,10 @@ Skill data           — Large data dirs excluded by default, opt-in with --incl
 
 ## Backup Format
 
-A `.saddlebag` file is a zstd-compressed tar archive:
+A `.clawback` file is a zstd-compressed tar archive:
 
 ```
-cowboy-2026-02-11.saddlebag
+cowboy-2026-02-11.clawback
 ├── manifest.json           # Metadata + per-file SHA-256 checksums
 ├── agent/                  # All agent markdown files
 │   ├── SOUL.md
@@ -145,7 +145,7 @@ cowboy-2026-02-11.saddlebag
 
 ```json
 {
-  "saddlebag_version": "1.0",
+  "clawback_version": "1.0",
   "created": "2026-02-11T04:36:00+08:00",
   "agent": {
     "name": "Cowboy",
@@ -178,14 +178,14 @@ cowboy-2026-02-11.saddlebag
 
 ## CLI Reference
 
-### `saddlebag backup`
+### `clawback backup`
 
 ```bash
-saddlebag backup [OPTIONS]
+clawback backup [OPTIONS]
 
 Options:
   --workspace PATH       OpenClaw workspace (auto-detected if not set)
-  --output PATH          Output file (default: <agent>-<date>.saddlebag)
+  --output PATH          Output file (default: <agent>-<date>.clawback)
   --with-credentials     Include encrypted credential vault
   --include-data         Include large skill data directories
   --exclude PATTERN      Exclude files matching glob pattern (repeatable)
@@ -195,10 +195,10 @@ Auto-detection: looks for SOUL.md or AGENTS.md in cwd, then checks
 common locations (~/.openclaw, ~/clawd, etc.)
 ```
 
-### `saddlebag restore`
+### `clawback restore`
 
 ```bash
-saddlebag restore <FILE> [OPTIONS]
+clawback restore <FILE> [OPTIONS]
 
 Options:
   --workspace PATH       Target workspace (default: original path or cwd)
@@ -218,10 +218,10 @@ Flow:
   8. Print post-restore checklist (missing tools, etc.)
 ```
 
-### `saddlebag verify`
+### `clawback verify`
 
 ```bash
-saddlebag verify <FILE>
+clawback verify <FILE>
 
 Checks:
   ✓ Archive integrity (decompresses without error)
@@ -231,14 +231,14 @@ Checks:
   ✓ Credential vault decryptable (if passphrase provided)
 ```
 
-### `saddlebag diff`
+### `clawback diff`
 
 ```bash
 # Compare backup to current live state
-saddlebag diff <FILE>
+clawback diff <FILE>
 
 # Compare two backups
-saddlebag diff <FILE_A> <FILE_B>
+clawback diff <FILE_A> <FILE_B>
 
 Output:
   ADDED     memory/2026-02-11.md
@@ -247,10 +247,10 @@ Output:
   UNCHANGED SOUL.md, AGENTS.md (23 files)
 ```
 
-### `saddlebag info`
+### `clawback info`
 
 ```bash
-saddlebag info <FILE>
+clawback info <FILE>
 
 Agent: Cowboy
 Created: 2026-02-11 04:36 (3 hours ago)
@@ -277,7 +277,7 @@ Paths are stored as placeholders in `env-map.json`:
 }
 ```
 
-On restore, Saddlebag auto-detects new values and asks for confirmation:
+On restore, Clawback auto-detects new values and asks for confirmation:
 
 ```
 Path remapping (macOS → Linux):
@@ -296,11 +296,11 @@ Files that contain hardcoded paths (TOOLS.md, gateway config, cron payloads) are
 | Linux (desktop) | Secret Service (D-Bus) | Encrypted file |
 | Linux (headless) | `pass` (if available) | Encrypted file |
 
-The fallback (age-encrypted JSON file at `~/.config/saddlebag/vault.age`) always works, on every platform.
+The fallback (age-encrypted JSON file at `~/.config/clawback/vault.age`) always works, on every platform.
 
 ### Dependency Check
 
-On restore, Saddlebag lists tools the agent uses and checks availability:
+On restore, Clawback lists tools the agent uses and checks availability:
 
 ```
 Dependencies:
@@ -331,7 +331,7 @@ Dependencies:
 | Tampered backup | Per-file checksums catch any modification |
 | Restoring wrong agent's backup | Manifest includes agent name; restore warns on mismatch |
 | Identity poisoning via backup | SOUL.md/AGENTS.md changes highlighted prominently in diff |
-| Supply chain attack on Saddlebag | Signed releases, SBOM, minimal pinned deps |
+| Supply chain attack on Clawback | Signed releases, SBOM, minimal pinned deps |
 
 ---
 
@@ -348,7 +348,7 @@ Aligned with OpenClaw's stack (TypeScript / Node.js):
 - **Hashing:** Node crypto (stdlib — SHA-256)
 - **CLI:** Commander.js (same as OpenClaw)
 - **Config parsing:** YAML via `yaml` package (same as OpenClaw)
-- **Distribution:** npm (`npm install -g saddlebag` or `npx saddlebag`)
+- **Distribution:** npm (`npm install -g clawback` or `npx clawback`)
 - **Build:** tsup (single-file bundle) or esbuild
 - **Testing:** Vitest
 - **Dependencies:** Minimal — commander, yaml, tar, age encryption, chalk
@@ -363,7 +363,7 @@ Aligned with OpenClaw's stack (TypeScript / Node.js):
 ### Project Structure
 
 ```
-saddlebag/
+clawback/
 ├── package.json
 ├── tsconfig.json
 ├── tsup.config.ts           # Bundle config
@@ -414,8 +414,8 @@ Each stage has: deliverables, tests, and a **gate** (all tests must pass before 
 - [ ] `discovery.test.ts`: finds workspace when AGENTS.md exists in cwd
 - [ ] `discovery.test.ts`: returns null when no workspace markers found
 - [ ] `discovery.test.ts`: respects `--workspace` override path
-- [ ] `cli.test.ts`: `saddlebag --version` prints version
-- [ ] `cli.test.ts`: `saddlebag --help` lists commands
+- [ ] `cli.test.ts`: `clawback --version` prints version
+- [ ] `cli.test.ts`: `clawback --help` lists commands
 
 **Gate:** `npm test` — all 6 tests pass, `npm run build` succeeds.
 
@@ -428,7 +428,7 @@ Each stage has: deliverables, tests, and a **gate** (all tests must pass before 
 - [ ] `src/manifest.ts` — scan workspace, hash files, produce manifest.json
 - [ ] File categorization: agent files, config, skills, scripts
 - [ ] SHA-256 checksum for every file
-- [ ] Respect `.gitignore` and default excludes (node_modules, .git, *.saddlebag)
+- [ ] Respect `.gitignore` and default excludes (node_modules, .git, *.clawback)
 - [ ] `--exclude` pattern support
 
 **Tests:**
@@ -446,18 +446,18 @@ Each stage has: deliverables, tests, and a **gate** (all tests must pass before 
 ---
 
 #### Stage 3: Backup Command (Core)
-**Goal:** `saddlebag backup` creates a valid .saddlebag archive from a workspace.
+**Goal:** `clawback backup` creates a valid .clawback archive from a workspace.
 
 **Deliverables:**
 - [ ] `src/backup.ts` — orchestrates: discover → manifest → tar+compress → write file
-- [ ] Output: `<agent-name>-<date>.saddlebag` (tar.gz format, gzip for max compatibility)
+- [ ] Output: `<agent-name>-<date>.clawback` (tar.gz format, gzip for max compatibility)
 - [ ] Includes `manifest.json` at archive root
 - [ ] Includes `README.md` with human-readable restore instructions
 - [ ] `--output` flag for custom output path
 - [ ] Progress output (file count, size)
 
 **Tests:**
-- [ ] `backup.test.ts`: creates .saddlebag file from mock workspace
+- [ ] `backup.test.ts`: creates .clawback file from mock workspace
 - [ ] `backup.test.ts`: archive contains manifest.json
 - [ ] `backup.test.ts`: archive contains all expected agent files (SOUL.md, MEMORY.md, etc.)
 - [ ] `backup.test.ts`: archive contains README.md
@@ -467,14 +467,14 @@ Each stage has: deliverables, tests, and a **gate** (all tests must pass before 
 - [ ] `backup.test.ts`: large files (>1MB) are included correctly
 
 **Integration test (safe — read-only against live workspace):**
-- [ ] `backup.integration.test.ts`: run `saddlebag backup --workspace ~/clawd --output /tmp/test-backup.saddlebag` — succeeds, file is created, manifest is valid JSON, checksums verify
+- [ ] `backup.integration.test.ts`: run `clawback backup --workspace ~/clawd --output /tmp/test-backup.clawback` — succeeds, file is created, manifest is valid JSON, checksums verify
 
 **Gate:** `npm test` — all 9 tests pass + integration test creates valid archive from live workspace.
 
 ---
 
 #### Stage 4: Verify Command
-**Goal:** `saddlebag verify` validates archive integrity.
+**Goal:** `clawback verify` validates archive integrity.
 
 **Deliverables:**
 - [ ] `src/verify.ts` — extract manifest, verify all checksums, report results
@@ -493,7 +493,7 @@ Each stage has: deliverables, tests, and a **gate** (all tests must pass before 
 ---
 
 #### Stage 5: Info Command
-**Goal:** `saddlebag info` shows human-readable backup summary.
+**Goal:** `clawback info` shows human-readable backup summary.
 
 **Deliverables:**
 - [ ] `src/info.ts` — read manifest, display formatted summary
@@ -531,7 +531,7 @@ Each stage has: deliverables, tests, and a **gate** (all tests must pass before 
 ---
 
 #### Stage 7: Restore Command (to isolated directory)
-**Goal:** `saddlebag restore` extracts archive to a target directory with path remapping.
+**Goal:** `clawback restore` extracts archive to a target directory with path remapping.
 
 **⚠️ All restore tests use temp directories only. Never touch ~/clawd.**
 
@@ -542,7 +542,7 @@ Each stage has: deliverables, tests, and a **gate** (all tests must pass before 
 - [ ] Post-restore checklist (missing tools, credential notes)
 - [ ] Identity file warnings (highlight SOUL.md/AGENTS.md changes)
 
-**Tests (all use /tmp/saddlebag-test-* directories):**
+**Tests (all use /tmp/clawback-test-* directories):**
 - [ ] `restore.test.ts`: extracts all files to target directory
 - [ ] `restore.test.ts`: file contents match original checksums after extract
 - [ ] `restore.test.ts`: path remapping applied to TOOLS.md content
@@ -553,7 +553,7 @@ Each stage has: deliverables, tests, and a **gate** (all tests must pass before 
 - [ ] `restore.test.ts`: warns about missing dependencies
 
 **Integration test (safe — writes to temp only):**
-- [ ] `restore.integration.test.ts`: backup live workspace → restore to /tmp/saddlebag-restore-test/ → verify all files present and checksums match
+- [ ] `restore.integration.test.ts`: backup live workspace → restore to /tmp/clawback-restore-test/ → verify all files present and checksums match
 
 **Gate:** `npm test` — all 9 tests pass + integration test round-trips successfully.
 
@@ -564,8 +564,8 @@ Each stage has: deliverables, tests, and a **gate** (all tests must pass before 
 
 **Deliverables:**
 - [ ] `src/diff.ts` — compare file lists + contents between two sources
-- [ ] `saddlebag diff <archive>` — compare archive to live workspace
-- [ ] `saddlebag diff <archive_a> <archive_b>` — compare two archives
+- [ ] `clawback diff <archive>` — compare archive to live workspace
+- [ ] `clawback diff <archive_a> <archive_b>` — compare two archives
 - [ ] Output: ADDED / MODIFIED / DELETED / UNCHANGED with line counts
 
 **Tests:**
@@ -609,18 +609,18 @@ Each stage has: deliverables, tests, and a **gate** (all tests must pass before 
 
 **End-to-end test (safe):**
 - [ ] `e2e.test.ts`: Full cycle on mock workspace:
-  1. `saddlebag backup --workspace fixtures/mock-workspace --output /tmp/test.saddlebag`
-  2. `saddlebag verify /tmp/test.saddlebag` → exit 0
-  3. `saddlebag info /tmp/test.saddlebag` → shows correct metadata
+  1. `clawback backup --workspace fixtures/mock-workspace --output /tmp/test.clawback`
+  2. `clawback verify /tmp/test.clawback` → exit 0
+  3. `clawback info /tmp/test.clawback` → shows correct metadata
   4. Modify a file in mock workspace
-  5. `saddlebag diff /tmp/test.saddlebag --workspace fixtures/mock-workspace` → shows modification
-  6. `saddlebag restore /tmp/test.saddlebag --workspace /tmp/restored/ --force`
+  5. `clawback diff /tmp/test.clawback --workspace fixtures/mock-workspace` → shows modification
+  6. `clawback restore /tmp/test.clawback --workspace /tmp/restored/ --force`
   7. Compare restored dir to original → all files match
 
 **Live backup test (read-only, safe):**
-- [ ] `live.test.ts`: `saddlebag backup --workspace ~/clawd --output /tmp/cowboy-backup.saddlebag` succeeds
-- [ ] `live.test.ts`: `saddlebag verify /tmp/cowboy-backup.saddlebag` → exit 0
-- [ ] `live.test.ts`: `saddlebag info /tmp/cowboy-backup.saddlebag` → shows "Cowboy"
+- [ ] `live.test.ts`: `clawback backup --workspace ~/clawd --output /tmp/cowboy-backup.clawback` succeeds
+- [ ] `live.test.ts`: `clawback verify /tmp/cowboy-backup.clawback` → exit 0
+- [ ] `live.test.ts`: `clawback info /tmp/cowboy-backup.clawback` → shows "Cowboy"
 
 **Gate:** ALL tests pass. `npm test` exits 0. Live backup of ~/clawd succeeds and verifies.
 
@@ -678,11 +678,11 @@ The ultimate test: can a backed-up agent actually run on a fresh machine? Not ju
 
 **Test flow:**
 ```
-1. saddlebag backup --workspace ~/clawd → cowboy.saddlebag
+1. clawback backup --workspace ~/clawd → cowboy.clawback
 2. docker build → fresh Linux container with Node.js + OpenClaw installed
-3. COPY cowboy.saddlebag into container
+3. COPY cowboy.clawback into container
 4. docker run:
-   a. saddlebag restore cowboy.saddlebag --workspace /agent --force
+   a. clawback restore cowboy.clawback --workspace /agent --force
    b. Verify all files present (SOUL.md, MEMORY.md, config, skills)
    c. Verify path remapping worked (no /Users/shen references in restored files)
    d. openclaw gateway start --workspace /agent (or dry-run equivalent)
@@ -693,9 +693,9 @@ The ultimate test: can a backed-up agent actually run on a fresh machine? Not ju
 **Dockerfile sketch:**
 ```dockerfile
 FROM node:24-slim
-RUN npm install -g saddlebag openclaw
-COPY cowboy.saddlebag /tmp/
-RUN saddlebag restore /tmp/cowboy.saddlebag --workspace /agent --force
+RUN npm install -g clawback openclaw
+COPY cowboy.clawback /tmp/
+RUN clawback restore /tmp/cowboy.clawback --workspace /agent --force
 RUN grep -r "/Users/shen" /agent/ && exit 1 || echo "No hardcoded paths ✓"
 # Validate gateway config parses
 RUN cd /agent && openclaw gateway validate 2>/dev/null || echo "Gateway validation skipped"
@@ -719,20 +719,20 @@ Two backup modes with smart credential handling.
 
 **Safe backup (default):**
 ```bash
-saddlebag backup
+clawback backup
 # No credentials included. Safe to store anywhere.
 ```
 
 **With credentials (opt-in, password-protected):**
 ```bash
 # Interactive — prompts for password twice (confirm):
-saddlebag backup --with-credentials
+clawback backup --with-credentials
 
 # Non-interactive — password via argument (for scripts/cron):
-saddlebag backup --with-credentials --password "mypassword"
+clawback backup --with-credentials --password "mypassword"
 
 # Include extra credential files beyond the default whitelist:
-saddlebag backup --with-credentials --include-credential ~/weibo-cookies.json --include-credential ~/.ssh/id_ed25519
+clawback backup --with-credentials --include-credential ~/weibo-cookies.json --include-credential ~/.ssh/id_ed25519
 ```
 
 **Default credential whitelist (auto-detected):**
@@ -758,7 +758,7 @@ Always stored in `--with-credentials` backups. Records:
 
 **Archive HAS credentials vault:**
 ```bash
-saddlebag restore backup.saddlebag --workspace /agent
+clawback restore backup.clawback --workspace /agent
 # → Detects credentials.age
 # → Prompts for password (or --password "xxx" for non-interactive)
 # → Decrypts and deploys all credentials to correct locations
@@ -768,7 +768,7 @@ saddlebag restore backup.saddlebag --workspace /agent
 
 **Archive has NO credentials (safe backup):**
 ```bash
-saddlebag restore backup.saddlebag --workspace /agent
+clawback restore backup.clawback --workspace /agent
 # → Restores all files
 # → Asks ONLY for the essential AI agent key to get agent running:
 #   "Enter your Anthropic API key (or press Enter to skip):"
@@ -812,7 +812,7 @@ saddlebag restore backup.saddlebag --workspace /agent
 |---|-------|---------|
 | 8 | **Incremental backups** | Full snapshots every day will grow the git repo. Could store diffs or rely on git dedup (OK for <1MB archives). |
 | 9 | **Backup rotation** | Keep last N backups, auto-prune old ones from the repo. |
-| 10 | **Dry-run backup** | `saddlebag backup --dry-run` to preview what would be included without creating the archive. |
+| 10 | **Dry-run backup** | `clawback backup --dry-run` to preview what would be included without creating the archive. |
 
 ---
 
@@ -835,14 +835,14 @@ For each stage (1 → 10):
 
 **The story:** Yuan is traveling in Japan. His Mac mini at home loses power, disk corrupts, or the OS breaks. He has no physical access. His agent (Cowboy) — with months of memories, configs, cron jobs, credentials — is gone.
 
-**But he ran `saddlebag backup` last week** and the `.saddlebag` file is on GitHub / cloud storage / USB he carries.
+**But he ran `clawback backup` last week** and the `.clawback` file is on GitHub / cloud storage / USB he carries.
 
 **Recovery from a hotel room:**
 ```bash
 # On any machine (friend's laptop, VPS, fresh cloud instance)
 # Step 1: Install runtime (one command)
-curl -fsSL https://raw.githubusercontent.com/openclaw/saddlebag/main/install.sh | sh
-# (or: npm install -g saddlebag openclaw)
+curl -fsSL https://raw.githubusercontent.com/openclaw/clawback/main/install.sh | sh
+# (or: npm install -g clawback openclaw)
 
 # Step 2: Get the backup file
 # From GitHub private repo:
@@ -850,9 +850,9 @@ gh repo clone yuan/agent-backups /tmp/backups
 # Or from cloud storage, USB, email attachment, whatever
 
 # Step 3: Restore
-saddlebag restore /tmp/backups/cowboy-2026-02-08.saddlebag --workspace ~/agent
+clawback restore /tmp/backups/cowboy-2026-02-08.clawback --workspace ~/agent
 
-# Saddlebag walks you through:
+# Clawback walks you through:
 #   → Detects new platform (Linux VPS vs macOS)
 #   → Remaps all paths automatically
 #   → Lists missing tools (optional ones can wait)
@@ -865,8 +865,8 @@ openclaw gateway start --workspace ~/agent
 ```
 
 **Design implications:**
-- **One-command install** — `npx saddlebag` must work without prior setup
-- **Guided restore** — the human may be stressed and not remember paths/configs. Saddlebag asks minimal questions and provides smart defaults
+- **One-command install** — `npx clawback` must work without prior setup
+- **Guided restore** — the human may be stressed and not remember paths/configs. Clawback asks minimal questions and provides smart defaults
 - **Platform adaptive** — backup from macOS ARM must restore cleanly on Linux x86 VPS
 - **Graceful degradation** — if some tools aren't available on the new machine, agent still starts with reduced capabilities rather than failing
 - **Small backup files** — must be easy to store in a git repo or carry on a USB stick. Agent state (without large data) should be < 5MB typically
@@ -880,11 +880,11 @@ This is the scenario every design decision should be tested against.
 ### Scenario 1: Hardware failure
 ```bash
 # Old machine (before it died — you ran this weekly)
-saddlebag backup --with-credentials --output /nas/backups/cowboy-latest.saddlebag
+clawback backup --with-credentials --output /nas/backups/cowboy-latest.clawback
 
 # New machine
-npm install -g saddlebag openclaw
-saddlebag restore /nas/backups/cowboy-latest.saddlebag --workspace ~/clawd
+npm install -g clawback openclaw
+clawback restore /nas/backups/cowboy-latest.clawback --workspace ~/clawd
 openclaw gateway start
 # Cowboy is back, memories intact
 ```
@@ -892,22 +892,22 @@ openclaw gateway start
 ### Scenario 2: Migration to new OS
 ```bash
 # On Mac
-saddlebag backup --with-credentials
+clawback backup --with-credentials
 
-# Copy .saddlebag file to Linux box, then:
-saddlebag restore cowboy-2026-02-11.saddlebag --workspace ~/clawd
+# Copy .clawback file to Linux box, then:
+clawback restore cowboy-2026-02-11.clawback --workspace ~/clawd
 # Paths auto-remapped, credentials moved to Linux keyring
 ```
 
 ### Scenario 3: "What changed this week?"
 ```bash
-saddlebag diff last-monday.saddlebag --live
+clawback diff last-monday.clawback --live
 # Shows all memory additions, config changes, new skills since Monday
 ```
 
 ### Scenario 4: Share agent setup (without credentials)
 ```bash
-saddlebag backup --exclude memory/ --output my-agent-template.saddlebag
+clawback backup --exclude memory/ --output my-agent-template.clawback
 # Share the template — identity + config + skills, no personal memories or creds
 ```
 
@@ -915,12 +915,12 @@ saddlebag backup --exclude memory/ --output my-agent-template.saddlebag
 
 ## v2 Roadmap
 
-### `saddlebag restore` → Agent Running (Full Integration)
+### `clawback restore` → Agent Running (Full Integration)
 
 Restore becomes a complete "one-key" operation — not just files, but a running agent:
 
 ```bash
-saddlebag restore backup.saddlebag --workspace /agent
+clawback restore backup.clawback --workspace /agent
 # 1. Extract files + remap paths (v1)
 # 2. Decrypt credentials if present (v1.1 P0.7)
 # 3. Detect if OpenClaw installed → if not, install it (npm install -g openclaw)
@@ -932,12 +932,12 @@ saddlebag restore backup.saddlebag --workspace /agent
 # 9. Report: "Agent 'Cowboy' is running at localhost:3000"
 ```
 
-### `saddlebag containerize` — Docker Deployment from Backup
+### `clawback containerize` — Docker Deployment from Backup
 
 Generate a ready-to-run Docker deployment from any backup:
 
 ```bash
-saddlebag containerize backup.saddlebag
+clawback containerize backup.clawback
 # → generates:
 #   deploy/
 #   ├── Dockerfile
@@ -945,7 +945,7 @@ saddlebag containerize backup.saddlebag
 #   ├── .env.example        # required credentials (user fills in)
 #   └── README.md           # how to run
 
-saddlebag containerize backup.saddlebag --with-credentials --password "xxx"
+clawback containerize backup.clawback --with-credentials --password "xxx"
 # → same but .env is pre-filled with decrypted credentials
 
 # Then:
@@ -955,7 +955,7 @@ cd deploy && docker compose up -d
 
 **Dockerfile generates:**
 - Base: `node:22-slim`
-- Installs OpenClaw + saddlebag
+- Installs OpenClaw + clawback
 - Restores backup with path remapping
 - Configures gateway from environment variables
 - Imports cron jobs
@@ -976,7 +976,7 @@ cd deploy && docker compose up -d
 | **Cron job import** | Restore calls `openclaw cron add` for each backed-up job |
 | **Channel config handling** | Slack/Telegram/Discord tokens treated as credentials, restored to gateway config |
 | **Post-restore health check** | After starting gateway, verify agent responds to a test message |
-| **`saddlebag upgrade`** | Migrate backup format between saddlebag versions |
+| **`clawback upgrade`** | Migrate backup format between clawback versions |
 | **Multi-agent workspaces** | Backup/restore multiple agents from one machine |
 
 ---
@@ -1019,7 +1019,7 @@ Cons:
 
 ## v3 Roadmap — Multi-Platform Agent Portability
 
-**Goal:** Saddlebag becomes a universal agent backup/restore/migration tool — not limited to OpenClaw. Backup from one platform, restore to another.
+**Goal:** Clawback becomes a universal agent backup/restore/migration tool — not limited to OpenClaw. Backup from one platform, restore to another.
 
 ### Target Platforms
 
@@ -1049,7 +1049,7 @@ nanoclaw/
 └── .claude/skills/           # Skills
 ```
 
-**What saddlebag would need to capture:**
+**What clawback would need to capture:**
 1. `groups/*/CLAUDE.md` — equivalent to our SOUL.md + MEMORY.md per-group
 2. `data/messages.db` — SQLite, portable as-is
 3. `data/sessions/` — Agent SDK conversation state
@@ -1090,13 +1090,13 @@ interface UniversalAgentState {
 **Phase 3: Cross-Platform Migration**
 ```bash
 # Backup from NanoClaw
-saddlebag backup --platform nanoclaw --workspace ~/nanoclaw
+clawback backup --platform nanoclaw --workspace ~/nanoclaw
 
 # Restore to OpenClaw
-saddlebag restore backup.saddlebag --platform openclaw --workspace ~/clawd
+clawback restore backup.clawback --platform openclaw --workspace ~/clawd
 
 # Or: migrate directly
-saddlebag migrate --from nanoclaw:~/nanoclaw --to openclaw:~/clawd
+clawback migrate --from nanoclaw:~/nanoclaw --to openclaw:~/clawd
 ```
 
 ### Feasibility Assessment
@@ -1121,10 +1121,10 @@ saddlebag migrate --from nanoclaw:~/nanoclaw --to openclaw:~/clawd
 
 1. **Skill inclusion policy:** Include all custom skills by default, or require opt-in? (Leaning: include by default, `--exclude` for large ones)
 2. **Incremental backups:** Worth adding in v1, or just full snapshots? (Leaning: full only for simplicity)
-3. **Backup rotation:** Should Saddlebag manage old backups, or leave that to the user? (Leaning: user's problem for v1)
+3. **Backup rotation:** Should Clawback manage old backups, or leave that to the user? (Leaning: user's problem for v1)
 4. **OpenClaw integration:** Ship as a built-in OpenClaw command (`openclaw backup`) or standalone tool? (Leaning: standalone first, propose upstream later)
-5. **Naming:** Is "Saddlebag" a good public-facing name or too niche? Alternatives: `agentpack`, `agentsave`, `clawback`
+5. **Naming:** Is "Clawback" a good public-facing name or too niche? Alternatives: `agentpack`, `agentsave`, `clawback`
 
 ---
 
-*"A good cowboy keeps their saddlebag packed. You never know when you'll need to ride."* 🐴
+*"A good cowboy keeps their clawback packed. You never know when you'll need to ride."* 🐴

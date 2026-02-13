@@ -51,7 +51,7 @@ const PROTECTED_FILES = [
   'TOOLS.md',
 ];
 
-const RESTORE_MARKER = '.saddlebag-restored';
+const RESTORE_MARKER = '.clawback-restored';
 const FIXUP_SCRIPT = 'restore-fixup.sh';
 
 function buildFixupScript(archivePath: string, protectedFiles: string[]): string {
@@ -62,7 +62,7 @@ set -euo pipefail
 
 WORKSPACE_DIR="$(cd "$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
 ARCHIVE_PATH="\${1:-${archiveDefault}}"
-ORIGINALS_DIR="\${WORKSPACE_DIR}/.saddlebag-originals"
+ORIGINALS_DIR="\${WORKSPACE_DIR}/.clawback-originals"
 PROTECTED_FILES=(
 ${filesList}
 )
@@ -144,7 +144,7 @@ export interface RestoreResult {
 }
 
 /**
- * Restore a .saddlebag archive to a target directory.
+ * Restore a .clawback archive to a target directory.
  *
  * Flow: verify archive -> extract entries -> remap paths -> write files -> report
  *
@@ -451,7 +451,7 @@ export async function postRestoreRun(
   } catch {
     await writeLine('OpenClaw not found. Install it: npm install -g openclaw');
     const err = new Error('OPENCLAW_NOT_FOUND');
-    (err as Error & { saddlebagExitCode?: number }).saddlebagExitCode = 1;
+    (err as Error & { clawbackExitCode?: number }).clawbackExitCode = 1;
     throw err;
   }
 

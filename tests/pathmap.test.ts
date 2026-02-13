@@ -33,7 +33,7 @@ afterEach(() => {
 function createTempWorkspace(
   files: Record<string, string>,
 ): string {
-  const dir = mkdtempSync(join(tmpdir(), 'saddlebag-pathmap-'));
+  const dir = mkdtempSync(join(tmpdir(), 'clawback-pathmap-'));
   tempDirs.push(dir);
 
   for (const [relPath, content] of Object.entries(files)) {

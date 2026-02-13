@@ -25,7 +25,7 @@ export interface DiffOptions {
 }
 
 /**
- * Extract the manifest and file contents from a .saddlebag archive.
+ * Extract the manifest and file contents from a .clawback archive.
  * Returns the manifest and a map of workspace-relative path → content buffer.
  */
 async function extractArchiveContents(
@@ -82,7 +82,7 @@ function countLines(content: string): number {
 }
 
 /**
- * Compare a .saddlebag archive against a live workspace.
+ * Compare a .clawback archive against a live workspace.
  *
  * - ADDED: file exists in workspace but not in archive
  * - MODIFIED: file exists in both but content differs
@@ -154,7 +154,7 @@ export async function diffArchiveVsWorkspace(
 }
 
 /**
- * Compare two .saddlebag archives.
+ * Compare two .clawback archives.
  *
  * Uses archive A as the baseline, archive B as the comparison:
  * - ADDED: file in B but not A

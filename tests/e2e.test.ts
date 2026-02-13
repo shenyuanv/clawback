@@ -15,8 +15,8 @@ describe('e2e: full backup-verify-info-diff-restore cycle', () => {
   let archivePath: string;
 
   beforeAll(() => {
-    tempDir = mkdtempSync(join(tmpdir(), 'saddlebag-e2e-'));
-    archivePath = join(tempDir, 'test.saddlebag');
+    tempDir = mkdtempSync(join(tmpdir(), 'clawback-e2e-'));
+    archivePath = join(tempDir, 'test.clawback');
   });
 
   afterAll(() => {

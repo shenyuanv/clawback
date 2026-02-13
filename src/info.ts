@@ -12,7 +12,7 @@ export interface InfoResult {
 }
 
 /**
- * Read a .saddlebag archive and return its manifest + archive-level metadata.
+ * Read a .clawback archive and return its manifest + archive-level metadata.
  */
 export async function getArchiveInfo(archivePath: string): Promise<InfoResult> {
   // Get archive file size and checksum

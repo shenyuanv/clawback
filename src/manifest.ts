@@ -42,7 +42,7 @@ const DEFAULT_EXCLUDE_NAMES = new Set([
 ]);
 
 /** File extensions always excluded */
-const DEFAULT_EXCLUDE_EXTENSIONS = ['.saddlebag'];
+const DEFAULT_EXCLUDE_EXTENSIONS = ['.clawback'];
 
 export type FileCategory = 'agent' | 'config' | 'skill' | 'script';
 
@@ -53,7 +53,7 @@ export interface ManifestFileEntry {
 }
 
 export interface Manifest {
-  saddlebag_version: string;
+  clawback_version: string;
   created: string;
   agent: {
     name: string;
@@ -142,7 +142,7 @@ export function createManifest(options: CreateManifestOptions): Manifest {
   const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
 
   return {
-    saddlebag_version: '1.0',
+    clawback_version: '1.0',
     created: new Date().toISOString(),
     agent: {
       name: agentName,

@@ -20,7 +20,7 @@ import { pipeline } from 'node:stream/promises';
 const FIXTURES = resolve(import.meta.dirname, 'fixtures');
 const MOCK_WORKSPACE = resolve(FIXTURES, 'mock-workspace');
 
-/** Helper: extract all entries from a .saddlebag (tar.gz) file */
+/** Helper: extract all entries from a .clawback (tar.gz) file */
 async function extractArchive(
   archivePath: string,
 ): Promise<Map<string, Buffer>> {
@@ -71,10 +71,10 @@ afterEach(() => {
 });
 
 describe('backup', () => {
-  it('creates .saddlebag file from mock workspace', async () => {
+  it('creates .clawback file from mock workspace', async () => {
     const outputPath = join(
       tmpdir(),
-      `saddlebag-test-${Date.now()}.saddlebag`,
+      `clawback-test-${Date.now()}.clawback`,
     );
     tempFiles.push(outputPath);
 
@@ -92,7 +92,7 @@ describe('backup', () => {
   it('archive contains manifest.json', async () => {
     const outputPath = join(
       tmpdir(),
-      `saddlebag-test-manifest-${Date.now()}.saddlebag`,
+      `clawback-test-manifest-${Date.now()}.clawback`,
     );
     tempFiles.push(outputPath);
 
@@ -107,14 +107,14 @@ describe('backup', () => {
     // Verify it's valid JSON
     const manifestStr = entries.get('manifest.json')!.toString('utf-8');
     const manifest = JSON.parse(manifestStr);
-    expect(manifest.saddlebag_version).toBe('1.0');
+    expect(manifest.clawback_version).toBe('1.0');
     expect(manifest.agent.name).toBeTruthy();
   });
 
   it('archive contains all expected agent files (SOUL.md, MEMORY.md, etc.)', async () => {
     const outputPath = join(
       tmpdir(),
-      `saddlebag-test-agent-files-${Date.now()}.saddlebag`,
+      `clawback-test-agent-files-${Date.now()}.clawback`,
     );
     tempFiles.push(outputPath);
 
@@ -148,7 +148,7 @@ describe('backup', () => {
   it('archive contains README.md', async () => {
     const outputPath = join(
       tmpdir(),
-      `saddlebag-test-readme-${Date.now()}.saddlebag`,
+      `clawback-test-readme-${Date.now()}.clawback`,
     );
     tempFiles.push(outputPath);
 
@@ -161,15 +161,15 @@ describe('backup', () => {
     expect(entries.has('README.md')).toBe(true);
 
     const readme = entries.get('README.md')!.toString('utf-8');
-    expect(readme).toContain('Saddlebag Backup');
+    expect(readme).toContain('Clawback Backup');
     expect(readme).toContain('How to Restore');
-    expect(readme).toContain('saddlebag restore');
+    expect(readme).toContain('clawback restore');
   });
 
   it('manifest checksums match actual file contents in archive', async () => {
     const outputPath = join(
       tmpdir(),
-      `saddlebag-test-checksums-${Date.now()}.saddlebag`,
+      `clawback-test-checksums-${Date.now()}.clawback`,
     );
     tempFiles.push(outputPath);
 
@@ -195,9 +195,9 @@ describe('backup', () => {
   });
 
   it('--output flag writes to specified path', async () => {
-    const customDir = mkdtempSync(join(tmpdir(), 'saddlebag-test-output-'));
+    const customDir = mkdtempSync(join(tmpdir(), 'clawback-test-output-'));
     tempDirs.push(customDir);
-    const customPath = join(customDir, 'my-custom-backup.saddlebag');
+    const customPath = join(customDir, 'my-custom-backup.clawback');
 
     const result = await createBackup({
       workspace: MOCK_WORKSPACE,
@@ -210,14 +210,14 @@ describe('backup', () => {
 
   it('backup of empty workspace (only SOUL.md) succeeds', async () => {
     const minimalWorkspace = mkdtempSync(
-      join(tmpdir(), 'saddlebag-test-minimal-'),
+      join(tmpdir(), 'clawback-test-minimal-'),
     );
     tempDirs.push(minimalWorkspace);
     writeFileSync(join(minimalWorkspace, 'SOUL.md'), '# Minimal Agent\n');
 
     const outputPath = join(
       tmpdir(),
-      `saddlebag-test-minimal-${Date.now()}.saddlebag`,
+      `clawback-test-minimal-${Date.now()}.clawback`,
     );
     tempFiles.push(outputPath);
 
@@ -237,7 +237,7 @@ describe('backup', () => {
 
   it('large files (>1MB) are included correctly', async () => {
     const largeWorkspace = mkdtempSync(
-      join(tmpdir(), 'saddlebag-test-large-'),
+      join(tmpdir(), 'clawback-test-large-'),
     );
     tempDirs.push(largeWorkspace);
     writeFileSync(join(largeWorkspace, 'SOUL.md'), '# Large Test Agent\n');
@@ -249,7 +249,7 @@ describe('backup', () => {
 
     const outputPath = join(
       tmpdir(),
-      `saddlebag-test-large-${Date.now()}.saddlebag`,
+      `clawback-test-large-${Date.now()}.clawback`,
     );
     tempFiles.push(outputPath);
 

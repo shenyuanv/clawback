@@ -39,7 +39,7 @@ afterEach(() => {
 
 /** Helper: create a temp workspace with given files */
 function createWorkspace(files: Record<string, string>): string {
-  const dir = mkdtempSync(join(tmpdir(), 'saddlebag-diff-'));
+  const dir = mkdtempSync(join(tmpdir(), 'clawback-diff-'));
   tempDirs.push(dir);
 
   for (const [relPath, content] of Object.entries(files)) {
@@ -56,7 +56,7 @@ function createWorkspace(files: Record<string, string>): string {
 async function backupWorkspace(workspace: string): Promise<string> {
   const archivePath = join(
     tmpdir(),
-    `saddlebag-diff-${Date.now()}-${Math.random().toString(36).slice(2)}.saddlebag`,
+    `clawback-diff-${Date.now()}-${Math.random().toString(36).slice(2)}.clawback`,
   );
   tempFiles.push(archivePath);
   await createBackup({ workspace, output: archivePath });

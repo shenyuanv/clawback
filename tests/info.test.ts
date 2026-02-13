@@ -38,7 +38,7 @@ afterEach(() => {
 
 describe('info', () => {
   it('displays correct agent name from manifest', async () => {
-    const archivePath = join(tmpdir(), `saddlebag-info-name-${Date.now()}.saddlebag`);
+    const archivePath = join(tmpdir(), `clawback-info-name-${Date.now()}.clawback`);
     tempFiles.push(archivePath);
 
     await createBackup({
@@ -55,7 +55,7 @@ describe('info', () => {
   });
 
   it('displays correct file counts per category', async () => {
-    const archivePath = join(tmpdir(), `saddlebag-info-counts-${Date.now()}.saddlebag`);
+    const archivePath = join(tmpdir(), `clawback-info-counts-${Date.now()}.clawback`);
     tempFiles.push(archivePath);
 
     await createBackup({
@@ -80,7 +80,7 @@ describe('info', () => {
   });
 
   it('displays creation date in human-readable format', async () => {
-    const archivePath = join(tmpdir(), `saddlebag-info-date-${Date.now()}.saddlebag`);
+    const archivePath = join(tmpdir(), `clawback-info-date-${Date.now()}.clawback`);
     tempFiles.push(archivePath);
 
     await createBackup({
@@ -98,7 +98,7 @@ describe('info', () => {
   });
 
   it('handles archive without credentials gracefully', async () => {
-    const archivePath = join(tmpdir(), `saddlebag-info-nocreds-${Date.now()}.saddlebag`);
+    const archivePath = join(tmpdir(), `clawback-info-nocreds-${Date.now()}.clawback`);
     tempFiles.push(archivePath);
 
     // Default backup has no credentials

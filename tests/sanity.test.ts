@@ -14,7 +14,7 @@ describe('P0.5 sanity checks', () => {
   const nodeCmd = `${process.execPath} --import tsx ${cliEntry}`;
 
   beforeAll(() => {
-    tempDir = mkdtempSync(join(tmpdir(), 'saddlebag-sanity-'));
+    tempDir = mkdtempSync(join(tmpdir(), 'clawback-sanity-'));
   });
 
   afterAll(() => {
@@ -43,7 +43,7 @@ describe('P0.5 sanity checks', () => {
       mkdirSync(join(workspace, 'skills', 'test-skill'), { recursive: true });
       writeFileSync(join(workspace, 'skills', 'test-skill', 'SKILL.md'), '# Test Skill');
       
-      const archivePath = join(tempDir, 'typical.saddlebag');
+      const archivePath = join(tempDir, 'typical.clawback');
       execSync(`${nodeCmd} backup --workspace "${workspace}" --output "${archivePath}"`, {
         cwd: join(process.cwd()),
         stdio: 'pipe',
@@ -181,7 +181,7 @@ No name field here, just description.
       writeFileSync(join(workspace, 'SOUL.md'), '# Test Soul\n\nI am a test agent.');
       writeFileSync(join(workspace, 'IDENTITY.md'), '# Identity\n- **Name:** PipelineBot');
       
-      const archivePath = join(tempDir, 'pipeline.saddlebag');
+      const archivePath = join(tempDir, 'pipeline.clawback');
       
       // Backup
       execSync(`${nodeCmd} backup --workspace "${workspace}" --output "${archivePath}"`, {

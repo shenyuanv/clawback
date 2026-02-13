@@ -40,7 +40,7 @@ afterEach(() => {
 describe('restore integration', () => {
   it('backup → restore round-trip: all files present and checksums match', async () => {
     // 1. Create a realistic workspace with paths that match the actual directory
-    const srcWorkspace = mkdtempSync(join(tmpdir(), 'saddlebag-integ-src-'));
+    const srcWorkspace = mkdtempSync(join(tmpdir(), 'clawback-integ-src-'));
     tempDirs.push(srcWorkspace);
     const home = process.env.HOME ?? '/tmp';
 
@@ -73,7 +73,7 @@ describe('restore integration', () => {
     // 2. Create backup
     const archivePath = join(
       tmpdir(),
-      `saddlebag-integ-${Date.now()}.saddlebag`,
+      `clawback-integ-${Date.now()}.clawback`,
     );
     tempFiles.push(archivePath);
 
@@ -87,7 +87,7 @@ describe('restore integration', () => {
     // 3. Restore to a fresh temp directory
     const restoreDir = join(
       tmpdir(),
-      `saddlebag-integ-target-${Date.now()}`,
+      `clawback-integ-target-${Date.now()}`,
     );
     tempDirs.push(restoreDir);
 

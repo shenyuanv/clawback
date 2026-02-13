@@ -21,7 +21,7 @@ export interface VerifyResult {
 }
 
 /**
- * Verify a .saddlebag archive's integrity.
+ * Verify a .clawback archive's integrity.
  *
  * Extracts the manifest, then checks every listed file exists
  * in the archive and its SHA-256 checksum matches.

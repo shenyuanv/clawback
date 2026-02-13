@@ -1,7 +1,7 @@
 #!/bin/bash
 # run-recovery-test.sh — P0.6 Docker Recovery Integration Test
 #
-# Proves that a saddlebag backup created on macOS can be restored
+# Proves that a clawback backup created on macOS can be restored
 # on a fresh Linux container with correct path remapping.
 #
 # Usage: cd tests/docker && bash run-recovery-test.sh
@@ -13,24 +13,24 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 DOCKER_DIR="$SCRIPT_DIR"
-IMAGE_NAME="saddlebag-recovery-test"
+IMAGE_NAME="clawback-recovery-test"
 
 # Cleanup function
 cleanup() {
   echo "[cleanup] Removing temporary artifacts..."
-  rm -f "$DOCKER_DIR"/saddlebag-*.tgz
-  rm -f "$DOCKER_DIR/test-backup.saddlebag"
+  rm -f "$DOCKER_DIR"/clawback-*.tgz
+  rm -f "$DOCKER_DIR/test-backup.clawback"
   rm -f "$DOCKER_DIR/.source-workspace-path"
   rm -rf "$SYNTHETIC_WORKSPACE" 2>/dev/null || true
   echo "[cleanup] Done."
 }
 trap cleanup EXIT
 
-echo "=== P0.6: Saddlebag Docker Recovery Integration Test ==="
+echo "=== P0.6: Clawback Docker Recovery Integration Test ==="
 echo ""
 
-# ---------- Step 1: Build saddlebag ----------
-echo "[1/5] Building saddlebag..."
+# ---------- Step 1: Build clawback ----------
+echo "[1/5] Building clawback..."
 cd "$PROJECT_ROOT"
 npm run build
 echo "      Build complete."
@@ -39,7 +39,7 @@ echo ""
 # ---------- Step 2: Create npm tarball ----------
 echo "[2/5] Packing npm tarball..."
 npm pack --pack-destination "$DOCKER_DIR" >/dev/null 2>&1
-TARBALL=$(ls "$DOCKER_DIR"/saddlebag-*.tgz 2>/dev/null | head -1)
+TARBALL=$(ls "$DOCKER_DIR"/clawback-*.tgz 2>/dev/null | head -1)
 if [ -z "$TARBALL" ]; then
   echo "FAIL: npm pack did not produce a tarball"
   exit 1
@@ -54,7 +54,7 @@ echo "[3/5] Creating synthetic workspace and backup..."
 # The env-map captures ${WORKSPACE} -> SYNTHETIC_WORKSPACE and ${HOME} -> $HOME.
 # Files that reference these paths will get remapped on restore.
 # Use /tmp explicitly (not $TMPDIR which may have trailing slash causing // in paths)
-SYNTHETIC_WORKSPACE=$(mktemp -d /tmp/saddlebag-synthetic-XXXXXX)
+SYNTHETIC_WORKSPACE=$(mktemp -d /tmp/clawback-synthetic-XXXXXX)
 SOURCE_HOME="$HOME"
 
 mkdir -p "$SYNTHETIC_WORKSPACE/memory"
@@ -65,7 +65,7 @@ mkdir -p "$SYNTHETIC_WORKSPACE/skills/test-skill"
 cat > "$SYNTHETIC_WORKSPACE/SOUL.md" << 'SOULEOF'
 # Soul
 
-I am a test agent created for saddlebag Docker recovery testing.
+I am a test agent created for clawback Docker recovery testing.
 My purpose is to verify cross-platform portability.
 SOULEOF
 
@@ -141,17 +141,17 @@ echo "      Source HOME: $SOURCE_HOME"
 echo "$SYNTHETIC_WORKSPACE" > "$DOCKER_DIR/.source-workspace-path"
 echo "$SOURCE_HOME" >> "$DOCKER_DIR/.source-workspace-path"
 
-# Create backup using saddlebag CLI
+# Create backup using clawback CLI
 cd "$PROJECT_ROOT"
 npx tsx src/index.ts backup \
   --workspace "$SYNTHETIC_WORKSPACE" \
-  --output "$DOCKER_DIR/test-backup.saddlebag"
+  --output "$DOCKER_DIR/test-backup.clawback"
 
-if [ ! -f "$DOCKER_DIR/test-backup.saddlebag" ]; then
+if [ ! -f "$DOCKER_DIR/test-backup.clawback" ]; then
   echo "FAIL: Backup was not created"
   exit 1
 fi
-echo "      Backup created: test-backup.saddlebag ($(du -h "$DOCKER_DIR/test-backup.saddlebag" | cut -f1))"
+echo "      Backup created: test-backup.clawback ($(du -h "$DOCKER_DIR/test-backup.clawback" | cut -f1))"
 echo ""
 
 # ---------- Step 4: Build Docker image ----------

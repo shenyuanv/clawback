@@ -1,54 +1,54 @@
-# 🐴 Saddlebag
+# 🐴 Clawback
 
 Backup & Disaster Recovery for OpenClaw AI Agents.
 
-Saddlebag creates portable `.saddlebag` archives of your agent's identity, memory, config, skills, and scripts — so you can restore your agent on any machine.
+Clawback creates portable `.clawback` archives of your agent's identity, memory, config, skills, and scripts — so you can restore your agent on any machine.
 
 ## Quickstart (5 lines)
 
 ```bash
-npm install -g saddlebag
-saddlebag backup --workspace ~/clawd
-saddlebag verify cowboy-2026-02-12.saddlebag
-saddlebag restore cowboy-2026-02-12.saddlebag --workspace ~/agent --force --run
+npm install -g github:shenyuanv/clawback
+clawback backup --workspace ~/clawd
+clawback verify cowboy-2026-02-12.clawback
+clawback restore cowboy-2026-02-12.clawback --workspace ~/agent --force --run
 ```
 
 ## Install
 
 ```bash
-npm install -g saddlebag
+npm install -g github:shenyuanv/clawback
 ```
 
 Or use directly:
 
 ```bash
-npx saddlebag backup
+npx clawback backup
 ```
 
 ## Common Commands
 
 ```bash
 # Back up your agent
-saddlebag backup --workspace ~/clawd
+clawback backup --workspace ~/clawd
 
 # Verify the backup is intact
-saddlebag verify cowboy-2026-02-12.saddlebag
+clawback verify cowboy-2026-02-12.clawback
 
 # See what's inside
-saddlebag info cowboy-2026-02-12.saddlebag
+clawback info cowboy-2026-02-12.clawback
 
 # Compare backup to live workspace
-saddlebag diff cowboy-2026-02-12.saddlebag --workspace ~/clawd
+clawback diff cowboy-2026-02-12.clawback --workspace ~/clawd
 
 # Restore to a new machine
-saddlebag restore cowboy-2026-02-12.saddlebag --workspace ~/agent --force
+clawback restore cowboy-2026-02-12.clawback --workspace ~/agent --force
 ```
 
 ## Commands
 
-### `saddlebag backup`
+### `clawback backup`
 
-Create a `.saddlebag` archive from an OpenClaw workspace.
+Create a `.clawback` archive from an OpenClaw workspace.
 
 ```
 Options:
@@ -59,7 +59,7 @@ Options:
   --exclude <pattern>   Exclude files matching glob pattern (repeatable)
 ```
 
-### `saddlebag restore <file>`
+### `clawback restore <file>`
 
 Restore an agent from a backup archive.
 
@@ -88,18 +88,18 @@ The `--run` flag turns restore into a complete recovery operation:
 7. Runs a health check and prints `✅ Agent '<name>' is running`
 
 ```bash
-saddlebag restore backup.saddlebag --workspace ~/agent --force --run
+clawback restore backup.clawback --workspace ~/agent --force --run
 ```
 
-### `saddlebag verify <file>`
+### `clawback verify <file>`
 
 Verify archive integrity by checking SHA-256 checksums of every file.
 
-### `saddlebag info <file>`
+### `clawback info <file>`
 
 Display backup metadata: agent name, creation date, source machine, file counts, and size.
 
-### `saddlebag diff <file> [fileB]`
+### `clawback diff <file> [fileB]`
 
 Compare a backup to the current workspace (drift detection), or compare two backups.
 
@@ -110,7 +110,7 @@ Options:
 
 ## Archive Format
 
-A `.saddlebag` file is a gzipped tar archive containing:
+A `.clawback` file is a gzipped tar archive containing:
 
 ```
 manifest.json          # File inventory with SHA-256 checksums
@@ -127,7 +127,7 @@ scripts/               # Utility scripts
 
 ### 6-Layer State Model
 
-Saddlebag organizes agent state into layers by priority:
+Clawback organizes agent state into layers by priority:
 
 | Layer | What | Examples |
 |-------|------|---------|
@@ -147,10 +147,10 @@ Works on macOS (Intel & ARM) and Linux (x86 & ARM). Path remapping handles diffe
 
 ## Credential Backup
 
-Saddlebag can optionally back up credentials (API keys, tokens, secrets) using the `--with-credentials` flag:
+Clawback can optionally back up credentials (API keys, tokens, secrets) using the `--with-credentials` flag:
 
 ```bash
-saddlebag backup --workspace ~/clawd --with-credentials
+clawback backup --workspace ~/clawd --with-credentials
 ```
 
 Credentials are encrypted with [age](https://age-encryption.org) and stored as a separately encrypted vault within the archive. You'll be prompted for a passphrase during backup and restore.
@@ -191,14 +191,14 @@ If you backed up with `--with-credentials`, the archive contains your channel to
 - **Telegram:** Messages split randomly between the two agents
 - **WhatsApp/Signal:** Second agent kicks the first off → auth ping-pong
 
-Saddlebag is designed for **disaster recovery** — the original is dead, you restore on a new machine. If the original is still running, stop it first (`openclaw gateway stop`) before starting the restored agent.
+Clawback is designed for **disaster recovery** — the original is dead, you restore on a new machine. If the original is still running, stop it first (`openclaw gateway stop`) before starting the restored agent.
 
 ## Primary Scenario
 
-> You're traveling. Your laptop dies. You have a `.saddlebag` file on a USB drive (or cloud storage). On any new machine with Node.js:
+> You're traveling. Your laptop dies. You have a `.clawback` file on a USB drive (or cloud storage). On any new machine with Node.js:
 
 ```bash
-npx saddlebag restore cowboy-backup.saddlebag --workspace ~/agent --force --run
+npx clawback restore cowboy-backup.clawback --workspace ~/agent --force --run
 ```
 
 Your agent is back, with all its memories, personality, and configuration intact.

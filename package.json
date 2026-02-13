@@ -1,11 +1,11 @@
 {
-  "name": "saddlebag",
+  "name": "clawback",
   "version": "1.1.0",
   "description": "Backup & Disaster Recovery for OpenClaw Agents",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "saddlebag": "dist/index.js"
+    "clawback": "dist/index.js"
   },
   "files": [
     "dist"

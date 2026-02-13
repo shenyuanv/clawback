@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 const FIXTURES = resolve(import.meta.dirname, 'fixtures');
 const MOCK_WORKSPACE = resolve(FIXTURES, 'mock-workspace');
 // Use a temp dir outside any workspace tree so parent-walk won't find markers
-const EMPTY_DIR = mkdtempSync(resolve(tmpdir(), 'saddlebag-test-empty-'));
+const EMPTY_DIR = mkdtempSync(resolve(tmpdir(), 'clawback-test-empty-'));
 
 describe('discoverWorkspace', () => {
   it('finds workspace when SOUL.md exists in cwd', () => {

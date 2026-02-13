@@ -85,7 +85,7 @@ async function repackArchive(
 
 describe('verify', () => {
   it('valid archive passes verification', async () => {
-    const archivePath = join(tmpdir(), `saddlebag-verify-valid-${Date.now()}.saddlebag`);
+    const archivePath = join(tmpdir(), `clawback-verify-valid-${Date.now()}.clawback`);
     tempFiles.push(archivePath);
 
     await createBackup({
@@ -103,8 +103,8 @@ describe('verify', () => {
   });
 
   it('archive with modified file fails verification (tamper detection)', async () => {
-    const originalPath = join(tmpdir(), `saddlebag-verify-tamper-orig-${Date.now()}.saddlebag`);
-    const tamperedPath = join(tmpdir(), `saddlebag-verify-tamper-${Date.now()}.saddlebag`);
+    const originalPath = join(tmpdir(), `clawback-verify-tamper-orig-${Date.now()}.clawback`);
+    const tamperedPath = join(tmpdir(), `clawback-verify-tamper-${Date.now()}.clawback`);
     tempFiles.push(originalPath, tamperedPath);
 
     await createBackup({
@@ -133,8 +133,8 @@ describe('verify', () => {
   });
 
   it('archive with missing file fails verification', async () => {
-    const originalPath = join(tmpdir(), `saddlebag-verify-missing-orig-${Date.now()}.saddlebag`);
-    const missingPath = join(tmpdir(), `saddlebag-verify-missing-${Date.now()}.saddlebag`);
+    const originalPath = join(tmpdir(), `clawback-verify-missing-orig-${Date.now()}.clawback`);
+    const missingPath = join(tmpdir(), `clawback-verify-missing-${Date.now()}.clawback`);
     tempFiles.push(originalPath, missingPath);
 
     await createBackup({
@@ -157,8 +157,8 @@ describe('verify', () => {
   });
 
   it('archive without manifest.json fails with clear error', async () => {
-    const originalPath = join(tmpdir(), `saddlebag-verify-nomanifest-orig-${Date.now()}.saddlebag`);
-    const noManifestPath = join(tmpdir(), `saddlebag-verify-nomanifest-${Date.now()}.saddlebag`);
+    const originalPath = join(tmpdir(), `clawback-verify-nomanifest-orig-${Date.now()}.clawback`);
+    const noManifestPath = join(tmpdir(), `clawback-verify-nomanifest-${Date.now()}.clawback`);
     tempFiles.push(originalPath, noManifestPath);
 
     await createBackup({
@@ -180,8 +180,8 @@ describe('verify', () => {
   });
 
   it('reports which specific files are corrupted', async () => {
-    const originalPath = join(tmpdir(), `saddlebag-verify-report-orig-${Date.now()}.saddlebag`);
-    const corruptedPath = join(tmpdir(), `saddlebag-verify-report-${Date.now()}.saddlebag`);
+    const originalPath = join(tmpdir(), `clawback-verify-report-orig-${Date.now()}.clawback`);
+    const corruptedPath = join(tmpdir(), `clawback-verify-report-${Date.now()}.clawback`);
     tempFiles.push(originalPath, corruptedPath);
 
     await createBackup({

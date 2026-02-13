@@ -44,7 +44,7 @@ afterEach(() => {
 async function createTestArchive(): Promise<string> {
   const archivePath = join(
     tmpdir(),
-    `saddlebag-test-restore-${Date.now()}-${Math.random().toString(36).slice(2)}.saddlebag`,
+    `clawback-test-restore-${Date.now()}-${Math.random().toString(36).slice(2)}.clawback`,
   );
   tempFiles.push(archivePath);
 
@@ -61,7 +61,7 @@ async function createTestArchive(): Promise<string> {
  * so env-map will correctly capture and remap them.
  */
 function createRemappableWorkspace(): string {
-  const dir = mkdtempSync(join(tmpdir(), 'saddlebag-test-remap-src-'));
+  const dir = mkdtempSync(join(tmpdir(), 'clawback-test-remap-src-'));
   tempDirs.push(dir);
   const home = process.env.HOME ?? '/tmp';
 
@@ -88,7 +88,7 @@ function createRemappableWorkspace(): string {
 async function createRemappableArchive(workspace: string): Promise<string> {
   const archivePath = join(
     tmpdir(),
-    `saddlebag-test-remap-${Date.now()}-${Math.random().toString(36).slice(2)}.saddlebag`,
+    `clawback-test-remap-${Date.now()}-${Math.random().toString(36).slice(2)}.clawback`,
   );
   tempFiles.push(archivePath);
 
@@ -98,7 +98,7 @@ async function createRemappableArchive(workspace: string): Promise<string> {
 
 /** Helper: create a temp target directory */
 function createTargetDir(): string {
-  const dir = mkdtempSync(join(tmpdir(), 'saddlebag-test-restore-target-'));
+  const dir = mkdtempSync(join(tmpdir(), 'clawback-test-restore-target-'));
   tempDirs.push(dir);
   return dir;
 }
@@ -198,7 +198,7 @@ describe('restore', () => {
     const archivePath = await createTestArchive();
     const targetDir = join(
       tmpdir(),
-      `saddlebag-test-dryrun-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      `clawback-test-dryrun-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     );
     tempDirs.push(targetDir);
 
@@ -228,7 +228,7 @@ describe('restore', () => {
 
     const uniqueTarget = join(
       tmpdir(),
-      `saddlebag-test-mkdir-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      `clawback-test-mkdir-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       'nested',
     );
     const uniqueParent = uniqueTarget.substring(0, uniqueTarget.lastIndexOf('/'));
@@ -265,7 +265,7 @@ describe('restore', () => {
 
     const result = await restoreBackup(archivePath, { workspace: targetDir });
 
-    const markerPath = join(targetDir, '.saddlebag-restored');
+    const markerPath = join(targetDir, '.clawback-restored');
     expect(existsSync(markerPath)).toBe(true);
 
     const marker = JSON.parse(readFileSync(markerPath, 'utf-8'));
@@ -285,7 +285,7 @@ describe('restore', () => {
     const scriptPath = join(targetDir, 'restore-fixup.sh');
     expect(existsSync(scriptPath)).toBe(true);
     const script = readFileSync(scriptPath, 'utf-8');
-    expect(script).toContain('.saddlebag-originals');
+    expect(script).toContain('.clawback-originals');
     expect(script).toContain('agent/${file}');
   });
 });

@@ -1,10 +1,10 @@
 #!/bin/bash
-# verify-restore.sh — Runs inside the Docker container to validate a saddlebag restore.
+# verify-restore.sh — Runs inside the Docker container to validate a clawback restore.
 #
 # Expects:
-#   /tmp/test-backup.saddlebag       — the backup archive
+#   /tmp/test-backup.clawback       — the backup archive
 #   /tmp/.source-workspace-path      — file with source macOS paths (line 1: workspace, line 2: home)
-#   saddlebag                        — installed globally in PATH
+#   clawback                        — installed globally in PATH
 #   openclaw                         — installed globally in PATH
 #
 # Exit 0 = all checks pass, exit 1 = failure
@@ -12,7 +12,7 @@
 set -euo pipefail
 
 RESTORE_DIR="/agent"
-ARCHIVE="/tmp/test-backup.saddlebag"
+ARCHIVE="/tmp/test-backup.clawback"
 FAILURES=0
 
 # Read the source paths that must NOT appear after restore
@@ -22,7 +22,7 @@ SOURCE_HOME=$(sed -n '2p' /tmp/.source-workspace-path)
 pass() { echo "  ✓ $1"; }
 fail() { echo "  ✗ $1"; FAILURES=$((FAILURES + 1)); }
 
-echo "=== Saddlebag Docker Recovery Test ==="
+echo "=== Clawback Docker Recovery Test ==="
 echo "Source workspace: $SOURCE_WORKSPACE"
 echo "Source home:      $SOURCE_HOME"
 echo "Restore target:   $RESTORE_DIR"
@@ -30,7 +30,7 @@ echo ""
 
 # ---------- Phase 1: Verify archive integrity ----------
 echo "[1/5] Verifying archive integrity..."
-if saddlebag verify "$ARCHIVE"; then
+if clawback verify "$ARCHIVE"; then
   pass "Archive integrity valid"
 else
   fail "Archive integrity check failed"
@@ -39,7 +39,7 @@ echo ""
 
 # ---------- Phase 2: Restore to /agent ----------
 echo "[2/5] Restoring backup to $RESTORE_DIR..."
-saddlebag restore "$ARCHIVE" --workspace "$RESTORE_DIR" --force
+clawback restore "$ARCHIVE" --workspace "$RESTORE_DIR" --force
 pass "Restore completed"
 echo ""
 

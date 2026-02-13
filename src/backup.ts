@@ -39,19 +39,19 @@ export interface BackupResult {
 }
 
 /**
- * Generate a default output filename: <agent-name>-<YYYY-MM-DD>.saddlebag
+ * Generate a default output filename: <agent-name>-<YYYY-MM-DD>.clawback
  */
 function defaultOutputName(agentName: string): string {
   const date = new Date().toISOString().slice(0, 10);
   const safeName = agentName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  return `${safeName}-${date}.saddlebag`;
+  return `${safeName}-${date}.clawback`;
 }
 
 /**
  * Generate a human-readable README for inclusion in the archive.
  */
 function generateReadme(manifest: Manifest): string {
-  return `# Saddlebag Backup
+  return `# Clawback Backup
 
 Agent: ${manifest.agent.name}
 Created: ${manifest.created}
@@ -69,19 +69,19 @@ Source: ${manifest.source.os} ${manifest.source.arch} (${manifest.source.hostnam
 ## How to Restore
 
 \`\`\`bash
-npm install -g saddlebag
-saddlebag restore ${defaultOutputName(manifest.agent.name)} --workspace ~/agent
+npm install -g clawback
+clawback restore ${defaultOutputName(manifest.agent.name)} --workspace ~/agent
 \`\`\`
 
 ## Integrity
 
 This archive includes SHA-256 checksums for every file in manifest.json.
-Run \`saddlebag verify <file>\` to validate integrity.
+Run \`clawback verify <file>\` to validate integrity.
 `;
 }
 
 /**
- * Create a .saddlebag backup archive from a workspace.
+ * Create a .clawback backup archive from a workspace.
  *
  * The archive is a tar.gz containing:
  * - manifest.json at root

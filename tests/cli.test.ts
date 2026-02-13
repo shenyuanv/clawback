@@ -20,13 +20,13 @@ describe('CLI', () => {
     tempFiles.length = 0;
   });
 
-  it('saddlebag --version prints version', () => {
+  it('clawback --version prints version', () => {
     const program = createCli();
     // Commander stores the version; we can check it's set
     expect(program.version()).toBe('1.1.0');
   });
 
-  it('saddlebag --help lists commands', () => {
+  it('clawback --help lists commands', () => {
     const program = createCli();
     const helpText = program.helpInformation();
     expect(helpText).toContain('backup');
@@ -41,7 +41,7 @@ describe('CLI', () => {
     const workspace = resolve(fixtures, 'mock-workspace');
     const archivePath = join(
       tmpdir(),
-      `saddlebag-cli-${Date.now()}-${Math.random().toString(36).slice(2)}.saddlebag`,
+      `clawback-cli-${Date.now()}-${Math.random().toString(36).slice(2)}.clawback`,
     );
     tempFiles.push(archivePath);
 

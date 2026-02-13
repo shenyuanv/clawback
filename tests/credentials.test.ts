@@ -69,7 +69,7 @@ async function readArchiveEntries(archivePath: string): Promise<Map<string, Buff
 }
 
 function createCredentialWorkspace(): string {
-  const dir = mkdtempSync(join(tmpdir(), 'saddlebag-test-creds-'));
+  const dir = mkdtempSync(join(tmpdir(), 'clawback-test-creds-'));
   tempDirs.push(dir);
 
   writeFileSync(join(dir, 'SOUL.md'), '# Cred Test Agent\n');
@@ -107,14 +107,14 @@ function createCredentialWorkspace(): string {
 function createArchivePath(): string {
   const archivePath = join(
     tmpdir(),
-    `saddlebag-test-creds-${Date.now()}-${Math.random().toString(36).slice(2)}.saddlebag`,
+    `clawback-test-creds-${Date.now()}-${Math.random().toString(36).slice(2)}.clawback`,
   );
   tempFiles.push(archivePath);
   return archivePath;
 }
 
 function createTargetDir(): string {
-  const dir = mkdtempSync(join(tmpdir(), 'saddlebag-test-creds-target-'));
+  const dir = mkdtempSync(join(tmpdir(), 'clawback-test-creds-target-'));
   tempDirs.push(dir);
   return dir;
 }
