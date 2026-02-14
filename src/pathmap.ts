@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 /**
  * Environment variable map: placeholder → absolute path value.
- * e.g. { "${HOME}": "/Users/shen", "${WORKSPACE}": "/Users/shen/clawd" }
+ * e.g. { "${HOME}": "/home/user", "${WORKSPACE}": "/home/user/workspace" }
  */
 export interface EnvMap {
   [placeholder: string]: string;
@@ -88,7 +88,7 @@ export function scanWorkspaceForPaths(
  * Apply path remapping: replace actual path values with placeholders.
  *
  * Sorts by longest value first to prevent partial matches.
- * e.g. "/Users/shen/clawd" is replaced before "/Users/shen"
+ * e.g. "/home/user/workspace" is replaced before "/home/user"
  */
 export function applyRemap(content: string, envMap: EnvMap): string {
   if (Object.keys(envMap).length === 0) return content;

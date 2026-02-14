@@ -43,5 +43,13 @@
   "homepage": "https://github.com/shenyuanv/clawback#readme",
   "bugs": {
     "url": "https://github.com/shenyuanv/clawback/issues"
-  }
+  },
+  "keywords": [
+    "openclaw",
+    "ai-agent",
+    "backup",
+    "restore",
+    "disaster-recovery",
+    "cli"
+  ]
 }
