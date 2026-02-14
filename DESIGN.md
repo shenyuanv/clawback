@@ -137,7 +137,7 @@ cowboy-2026-02-11.clawback
 │   └── env-map.json        # Original paths → ${PLACEHOLDERS}
 ├── skills/                 # Custom skills only
 ├── scripts/                # Custom scripts
-├── credentials.age         # age-encrypted credential vault (if --with-credentials)
+├── credentials.age         # AES-256-GCM encrypted credential vault (if --with-credentials)
 └── README.md               # Human-readable: what's in this backup, how to restore
 ```
 
@@ -288,15 +288,11 @@ Path remapping (macOS → Linux):
 
 Files that contain hardcoded paths (TOOLS.md, gateway config, cron payloads) are rewritten with new values.
 
-### Credential Backends
+### Credential Storage
 
-| Platform | Primary | Fallback |
-|----------|---------|----------|
-| macOS | Keychain (`security` CLI) | Encrypted file |
-| Linux (desktop) | Secret Service (D-Bus) | Encrypted file |
-| Linux (headless) | `pass` (if available) | Encrypted file |
+Credentials are stored as an AES-256-GCM encrypted vault (`credentials.age`) inside the archive. This approach works on all platforms without requiring platform-specific keyring integration.
 
-The fallback (age-encrypted JSON file at `~/.config/clawback/vault.age`) always works, on every platform.
+> **Future consideration:** Platform keyring backends (macOS Keychain, Linux Secret Service, `pass`) could be added for restore-time credential storage, but the encrypted-file approach covers all current use cases.
 
 ### Dependency Check
 
@@ -316,7 +312,7 @@ Dependencies:
 ### Design Principles
 
 1. **Offline by default** — no network access, no accounts, no telemetry
-2. **Credentials always encrypted** — age encryption, separate from main archive
+2. **Credentials always encrypted** — AES-256-GCM encryption, separate from main archive
 3. **Integrity built-in** — SHA-256 per file, manifest validation
 4. **Transparent restore** — always shows diff, never blind-applies
 5. **Minimal dependencies** — small attack surface, all deps pinned with hashes
@@ -344,14 +340,14 @@ Aligned with OpenClaw's stack (TypeScript / Node.js):
 - **Language:** TypeScript (strict mode)
 - **Runtime:** Node.js 20+ (LTS)
 - **Compression:** tar + zstd (via `@napi-rs/zstd` or Node zlib gzip fallback)
-- **Encryption:** age (via `age-encryption` npm or shelling to `age` CLI)
+- **Encryption:** AES-256-GCM + scrypt (Node crypto stdlib)
 - **Hashing:** Node crypto (stdlib — SHA-256)
 - **CLI:** Commander.js (same as OpenClaw)
 - **Config parsing:** YAML via `yaml` package (same as OpenClaw)
 - **Distribution:** npm (`npm install -g clawback` or `npx clawback`)
 - **Build:** tsup (single-file bundle) or esbuild
 - **Testing:** Vitest
-- **Dependencies:** Minimal — commander, yaml, tar, age encryption, chalk
+- **Dependencies:** Minimal — commander, yaml, tar-stream, chalk (encryption via Node crypto stdlib)
 
 **Why align with OpenClaw's stack:**
 - Same language = potential upstream merge as `openclaw backup`
@@ -378,10 +374,11 @@ clawback/
 │   ├── pathmap.ts           # Path detection & remapping
 │   ├── credentials.ts       # Credential export/import + encryption
 │   ├── discovery.ts         # OpenClaw workspace auto-detection
-│   └── platforms/
-│       ├── index.ts         # Platform detection & abstraction
-│       ├── darwin.ts        # macOS-specific (Keychain, paths)
-│       └── linux.ts         # Linux-specific (Secret Service, XDG)
+│   ├── encrypt.ts           # Full-archive encryption (AES-256-GCM)
+│   ├── archive-reader.ts    # Encrypted/plain archive resolution
+│   ├── containerize.ts      # Docker deployment generation
+│   ├── output.ts            # Non-PTY-safe stdout/stderr helpers
+│   └── cron.ts              # Cron job types
 ├── tests/
 │   ├── backup.test.ts
 │   ├── restore.test.ts
@@ -793,7 +790,7 @@ clawback restore backup.clawback --workspace /agent
 
 #### Implementation
 - `src/credentials.ts` — detect, collect, encrypt, decrypt credential files
-- Encryption: `age` library with password recipient (argon2 KDF)
+- Encryption: AES-256-GCM + scrypt KDF (Node crypto stdlib)
 - `credentials-manifest.json` — what was backed up and where it goes
 - `--with-credentials`, `--password`, `--include-credential` flags
 - Tests: encrypt/decrypt round-trip, restore with/without vault, wrong password rejection, include-credential round-trip, manifest accuracy
@@ -922,9 +919,9 @@ One-key restore: extract → decrypt → detect OpenClaw → prompt API key → 
 ### `containerize` (next)
 
 ```bash
-clawback containerize backup.clawback [--with-credentials --password xxx]
+clawback containerize backup.clawback [--output <dir>] [--run]
 ```
-Generates `deploy/` with Dockerfile, docker-compose.yml, .env.example, README.
+Generates `deploy/` with Dockerfile, docker-compose.yml, entrypoint.sh, README.
 
 ### Restore Awareness (planned)
 
@@ -939,7 +936,7 @@ After restore + gateway start, inject wake event so the agent knows it was resto
 |---------|-------------|
 | **`clawback upgrade`** | Migrate backup format between versions |
 | **Multi-agent workspaces** | Backup/restore multiple agents from one machine |
-| **Full-archive encryption** | `--encrypt` flag for privacy on untrusted storage |
+| ~~**Full-archive encryption**~~ | ~~`--encrypt` flag for privacy on untrusted storage~~ (done — v1.1) |
 
 ---
 
@@ -949,7 +946,7 @@ After restore + gateway start, inject wake event so the agent knows it was resto
 **Date:** 2026-02-13
 
 ### Current behavior
-`--with-credentials` encrypts a small vault (~11KB) with age. All other files remain readable in the archive.
+`--with-credentials` encrypts a small vault (~11KB) with AES-256-GCM. All other files remain readable in the archive.
 
 ### Why credentials-only is the right default
 

@@ -74,7 +74,7 @@ describe('containerize', () => {
 
     const dockerfile = readFileSync(join(outputDir, 'Dockerfile'), 'utf-8');
     expect(dockerfile).toContain('FROM node:22-slim');
-    expect(dockerfile).toContain('COPY test.clawback');
+    expect(dockerfile).toContain('COPY ["test.clawback"');
     expect(dockerfile).toContain('HEALTHCHECK');
     expect(dockerfile).toContain('entrypoint.sh');
   });

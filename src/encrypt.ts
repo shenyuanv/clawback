@@ -9,6 +9,9 @@ import { randomBytes, scryptSync, createCipheriv, createDecipheriv } from 'node:
 
 const MAGIC = '{"v":2,';
 
+/** scrypt parameters: N=2^17, r=8, p=1 (OWASP recommended minimum) */
+const SCRYPT_OPTIONS = { N: 131072, r: 8, p: 1, maxmem: 256 * 131072 * 8 };
+
 /**
  * Check if a buffer is an encrypted clawback archive.
  */
@@ -23,7 +26,7 @@ export function isEncryptedArchive(data: Buffer): boolean {
 export function encryptArchive(archive: Buffer, password: string): Buffer {
   const salt = randomBytes(16);
   const nonce = randomBytes(12);
-  const key = scryptSync(password, salt, 32);
+  const key = scryptSync(password, salt, 32, SCRYPT_OPTIONS);
 
   const cipher = createCipheriv('aes-256-gcm', key, nonce);
   const ciphertext = Buffer.concat([cipher.update(archive), cipher.final()]);
@@ -66,7 +69,7 @@ export function decryptArchive(data: Buffer, password: string): Buffer {
   const tag = Buffer.from(envelope.tag, 'base64');
   const ciphertext = Buffer.from(envelope.ciphertext, 'base64');
 
-  const key = scryptSync(password, salt, 32);
+  const key = scryptSync(password, salt, 32, SCRYPT_OPTIONS);
 
   try {
     const decipher = createDecipheriv('aes-256-gcm', key, nonce);

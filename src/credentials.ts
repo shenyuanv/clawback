@@ -17,6 +17,9 @@ import { applyRemap, unapplyRemap, type EnvMap } from './pathmap.js';
 const REDACTED_VALUE = 'REDACTED';
 const CREDENTIAL_KEY_PATTERN = /api[_-]?key|token|secret|access[_-]?token|refresh[_-]?token/i;
 
+/** scrypt parameters: N=2^17, r=8, p=1 (OWASP recommended minimum) */
+const SCRYPT_OPTIONS = { N: 131072, r: 8, p: 1, maxmem: 256 * 131072 * 8 };
+
 export type CredentialSource =
   | 'gateway-config'
   | 'env-file'
@@ -378,7 +381,7 @@ export async function encryptCredentialVault(
 ): Promise<Buffer> {
   const salt = randomBytes(16);
   const nonce = randomBytes(12);
-  const key = scryptSync(password, salt, 32);
+  const key = scryptSync(password, salt, 32, SCRYPT_OPTIONS);
 
   const cipher = createCipheriv('aes-256-gcm', key, nonce);
   const plaintext = Buffer.from(JSON.stringify(payload), 'utf-8');
@@ -420,7 +423,7 @@ export async function decryptCredentialVault(
   const tag = Buffer.from(envelope.tag, 'base64');
   const ciphertext = Buffer.from(envelope.ciphertext, 'base64');
 
-  const key = scryptSync(password, salt, 32);
+  const key = scryptSync(password, salt, 32, SCRYPT_OPTIONS);
 
   try {
     const decipher = createDecipheriv('aes-256-gcm', key, nonce);
@@ -440,14 +443,35 @@ export function restoreCredentialFiles(
   oldEnvMap: EnvMap,
   newEnvMap: EnvMap,
 ): string[] {
+  // Build list of allowed parent directories from env map values
+  const allowedRoots: string[] = [];
+  for (const value of Object.values(newEnvMap)) {
+    if (value) allowedRoots.push(resolve(value));
+  }
+  const home = resolve(process.env.HOME ?? process.env.USERPROFILE ?? '/');
+  if (!allowedRoots.some((r) => r === home || r.startsWith(home + '/'))) {
+    allowedRoots.push(home);
+  }
+
   const restoredPaths: string[] = [];
   for (const file of files) {
-    const targetPath = remapCredentialPath(file.originalPath, oldEnvMap, newEnvMap);
+    const targetPath = resolve(remapCredentialPath(file.originalPath, oldEnvMap, newEnvMap));
+
+    // Path safety: credential files must resolve under an allowed root
+    const isAllowed = allowedRoots.some(
+      (root) => targetPath.startsWith(root + '/') || targetPath === root,
+    );
+    if (!isAllowed) {
+      throw new Error(
+        `Credential path traversal detected: "${file.originalPath}" resolves to "${targetPath}" outside allowed directories`,
+      );
+    }
+
     mkdirSync(dirname(targetPath), { recursive: true });
     const data = Buffer.from(file.data, 'base64');
     writeFileSync(targetPath, data);
     try {
-      chmodSync(targetPath, file.mode);
+      chmodSync(targetPath, file.mode & 0o777);
     } catch {
       // ignore
     }

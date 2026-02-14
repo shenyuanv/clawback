@@ -10,7 +10,7 @@ import { join, dirname, basename, resolve } from 'node:path';
 import { createReadStream } from 'node:fs';
 import { createGunzip } from 'node:zlib';
 import { pipeline } from 'node:stream/promises';
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 import { createInterface } from 'node:readline/promises';
 import * as tar from 'tar-stream';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
@@ -254,10 +254,19 @@ export async function restoreBackup(
     mkdirSync(targetDir, { recursive: true });
   }
 
+  const resolvedTargetDir = resolve(targetDir);
+
   for (const fileEntry of manifest.files) {
     const archiveEntryPath = getArchivePath(fileEntry.path, fileEntry.category);
     const content = entries.get(archiveEntryPath)!;
-    const targetPath = join(targetDir, fileEntry.path);
+    const targetPath = resolve(targetDir, fileEntry.path);
+
+    // Path traversal protection: ensure target stays within workspace
+    if (!targetPath.startsWith(resolvedTargetDir + '/') && targetPath !== resolvedTargetDir) {
+      throw new Error(
+        `Path traversal detected: "${fileEntry.path}" resolves outside target directory`,
+      );
+    }
 
     // Determine if this file needs path remapping
     let finalContent = content;
@@ -426,17 +435,27 @@ function importCronJobs(
   if (!existsSync(cronPath)) return 0;
   const raw = readFileSync(cronPath, 'utf-8').trim();
   if (!raw) return 0;
-  let jobs: unknown;
+  let parsed: unknown;
   try {
-    jobs = JSON.parse(raw);
+    parsed = JSON.parse(raw);
   } catch {
     return 0;
   }
-  if (!Array.isArray(jobs) || jobs.length === 0) return 0;
+  // cron-jobs.json may be a wrapper object { version, exported, jobs: [...] }
+  // or a bare array of jobs
+  let jobs: unknown[];
+  if (Array.isArray(parsed)) {
+    jobs = parsed;
+  } else if (parsed && typeof parsed === 'object' && Array.isArray((parsed as Record<string, unknown>).jobs)) {
+    jobs = (parsed as Record<string, unknown>).jobs as unknown[];
+  } else {
+    return 0;
+  }
+  if (jobs.length === 0) return 0;
   let imported = 0;
   for (const job of jobs) {
     const payload = JSON.stringify(job);
-    execSync(`openclaw cron add --json '${payload}'`, { cwd: workspace, stdio: 'pipe' });
+    execFileSync('openclaw', ['cron', 'add', '--json', payload], { cwd: workspace, stdio: 'pipe' });
     imported += 1;
   }
   return imported;

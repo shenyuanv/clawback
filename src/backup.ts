@@ -192,23 +192,23 @@ export async function createBackup(options: BackupOptions): Promise<BackupResult
   manifest.contents.scripts = scriptFiles.length;
   manifest.contents.total_bytes = manifestTotalBytes;
 
+  // Resolve password once upfront (shared by credential vault + full-archive encryption)
+  let resolvedPassword = options.password;
+  if (!resolvedPassword && (options.withCredentials || options.encrypt)) {
+    const prompt = options.encrypt
+      ? 'Enter encryption password: '
+      : 'Enter password to encrypt credentials: ';
+    resolvedPassword = await promptForPassword(prompt, true, options.prompt);
+  }
+
   // Encrypt credentials into vault if requested
   let credentialManifest: CredentialManifest | null = null;
   if (options.withCredentials) {
     const gatewayCredentials = gatewayExtraction?.credentials ?? [];
     credentialManifest = buildCredentialManifest(gatewayCredentials, credentialFiles);
 
-    let password = options.password;
-    if (!password) {
-      password = await promptForPassword(
-        'Enter password to encrypt credentials: ',
-        true,
-        options.prompt,
-      );
-    }
-
     const vaultPayload = buildCredentialVaultPayload(gatewayCredentials, credentialFiles);
-    const encryptedVault = await encryptCredentialVault(vaultPayload, password);
+    const encryptedVault = await encryptCredentialVault(vaultPayload, resolvedPassword!);
 
     pack.entry({ name: 'credentials-manifest.json' }, JSON.stringify(credentialManifest, null, 2));
     pack.entry({ name: 'credentials.age', size: encryptedVault.length }, encryptedVault);
@@ -265,16 +265,8 @@ export async function createBackup(options: BackupOptions): Promise<BackupResult
   // 6. Encrypt full archive if --encrypt
   if (options.encrypt) {
     const { encryptArchive } = await import('./encrypt.js');
-    let encryptPassword = options.password;
-    if (!encryptPassword) {
-      encryptPassword = await promptForPassword(
-        'Enter encryption password: ',
-        true,
-        options.prompt,
-      );
-    }
     const archiveData = readFileSync(outputPath);
-    const encrypted = encryptArchive(archiveData, encryptPassword);
+    const encrypted = encryptArchive(archiveData, resolvedPassword!);
     writeFileSync(outputPath, encrypted);
   }
 

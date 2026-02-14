@@ -36,6 +36,13 @@ export async function containerize(
   const agentName = manifest.agent.name;
   const archiveFilename = basename(archivePath);
 
+  // Validate filename to prevent Dockerfile injection via crafted filenames
+  if (/[^a-zA-Z0-9._\-]/.test(archiveFilename)) {
+    throw new Error(
+      `Archive filename "${archiveFilename}" contains unsafe characters. Rename to use only alphanumeric, dot, dash, or underscore.`,
+    );
+  }
+
   // Copy archive into deploy folder
   copyFileSync(archivePath, join(outputDir, archiveFilename));
 
@@ -47,11 +54,11 @@ RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/* && \
     npm install -g openclaw git+https://github.com/shenyuanv/clawback.git
 
 # Copy backup archive
-COPY ${archiveFilename} /tmp/${archiveFilename}
+COPY ["${archiveFilename}", "/tmp/${archiveFilename}"]
 
 # Restore agent
-RUN clawback restore /tmp/${archiveFilename} --workspace /workspace --force && \\
-    rm /tmp/${archiveFilename}
+RUN clawback restore "/tmp/${archiveFilename}" --workspace /workspace --force && \\
+    rm "/tmp/${archiveFilename}"
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

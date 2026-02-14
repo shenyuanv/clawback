@@ -8,6 +8,7 @@ const writeLine = vi.fn(async () => undefined);
 
 vi.mock('node:child_process', () => ({
   execSync: vi.fn(),
+  execFileSync: vi.fn(),
 }));
 
 vi.mock('../src/output.js', () => ({
@@ -22,8 +23,9 @@ vi.mock('node:readline/promises', () => ({
   }),
 }));
 
-const { execSync } = await import('node:child_process');
+const { execSync, execFileSync } = await import('node:child_process');
 const execSyncMock = execSync as unknown as vi.Mock;
+const execFileSyncMock = execFileSync as unknown as vi.Mock;
 const { postRestoreRun } = await import('../src/restore.js');
 
 const tempDirs: string[] = [];
@@ -76,19 +78,21 @@ describe('postRestoreRun', () => {
     writeFileSync(join(workspace, 'config', 'gateway.yaml'), 'anthropic:\n  apiKey: OK\n');
 
     execSyncMock.mockImplementation(() => Buffer.from('ok'));
+    execFileSyncMock.mockImplementation(() => Buffer.from('ok'));
 
     vi.useFakeTimers();
     const runPromise = postRestoreRun(workspace, 'Agent');
     await vi.runAllTimersAsync();
     await runPromise;
 
-    const calls = execSyncMock.mock.calls.map(
-      (args) => args[0] as string,
+    // Cron imports now use execFileSync instead of execSync (no shell injection)
+    const cronCalls = execFileSyncMock.mock.calls.filter(
+      (args) => args[0] === 'openclaw' && args[1]?.[0] === 'cron',
     );
-    const cronCalls = calls.filter((cmd) => cmd.startsWith('openclaw cron add'));
     expect(cronCalls.length).toBe(2);
-    expect(cronCalls[0]).toContain('"name":"job1"');
-    expect(cronCalls[1]).toContain('"name":"job2"');
+    expect(cronCalls[0][1]).toContain('--json');
+    expect(cronCalls[0][1][3]).toContain('"name":"job1"');
+    expect(cronCalls[1][1][3]).toContain('"name":"job2"');
   });
 
   it('prompts for API key and writes gateway config', async () => {

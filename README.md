@@ -59,13 +59,14 @@ Create a `.clawback` archive from an OpenClaw workspace.
 
 ```
 Options:
-  --workspace <path>    Workspace path (auto-detected if not set)
-  --output <path>       Output file path
-  --with-credentials    Include encrypted credential vault
-  --encrypt             Encrypt entire archive (includes credentials automatically)
-  --password <pass>     Password for encryption (non-interactive)
-  --include-data        Include large skill data directories
-  --exclude <pattern>   Exclude files matching glob pattern (repeatable)
+  --workspace <path>           Workspace path (auto-detected if not set)
+  --output <path>              Output file path
+  --with-credentials           Include encrypted credential vault
+  --encrypt                    Encrypt entire archive (includes credentials automatically)
+  --password <pass>            Password for encryption (non-interactive)
+  --include-credential <path>  Include extra credential file (repeatable)
+  --include-data               Include large skill data directories
+  --exclude <pattern>          Exclude files matching glob pattern (repeatable)
 ```
 
 ### `clawback restore <file>`
@@ -79,7 +80,7 @@ Options:
   --force               Skip confirmation prompt
   --skip-credentials    Skip credential restoration
   --run                 Start OpenClaw gateway after restore
-  --password <pass>     Password for credential vault (non-interactive)
+  --password <pass>     Password for encrypted archive or credential vault (non-interactive)
 ```
 
 Path remapping is automatic — absolute paths in config files are rewritten to match the new machine's HOME and workspace paths.
@@ -134,9 +135,19 @@ Config and memory persist via volume mounts (`./config/` and `./data/`), so the 
 
 Verify archive integrity by checking SHA-256 checksums of every file.
 
+```
+Options:
+  --password <pass>     Password for encrypted archive
+```
+
 ### `clawback info <file>`
 
 Display backup metadata: agent name, creation date, source machine, file counts, and size.
+
+```
+Options:
+  --password <pass>     Password for encrypted archive
+```
 
 ### `clawback diff <file> [fileB]`
 
@@ -145,6 +156,7 @@ Compare a backup to the current workspace (drift detection), or compare two back
 ```
 Options:
   --workspace <path>    Workspace to compare against
+  --password <pass>     Password for encrypted archive
 ```
 
 ## Archive Format
@@ -174,7 +186,7 @@ Clawback organizes agent state into layers by priority:
 | 2. Memory | What the agent knows | MEMORY.md, memory/*.md |
 | 3. Config | How the agent runs | gateway.yaml, env vars |
 | 4. Skills | What the agent can do | Custom skill directories |
-| 5. Credentials | Auth & secrets | API keys (encrypted with age) |
+| 5. Credentials | Auth & secrets | API keys (encrypted with AES-256-GCM) |
 | 6. External | Platform state | Cron jobs, channel configs |
 
 ## Cross-Platform
@@ -221,12 +233,12 @@ clawback restore backup.clawback --workspace ~/agent --password "mypassword"
 | Config (gateway.yaml, cron) | ✅ Readable (keys REDACTED) | ✅ Readable (keys REDACTED) | 🔒 Encrypted |
 | Credentials (API keys, tokens) | ❌ Not included | 🔒 Encrypted vault | 🔒 Encrypted |
 | `info`/`verify`/`diff` without password | ✅ Works | ✅ Works | ❌ Needs password |
-| Restore without password | ✅ Prompts for API key | ✅ Prompts for API key | ❌ Needs password |
+| Restore without password | ✅ Prompts for API key | ⚠️ Prompts for vault password | ❌ Needs password |
 
 ## Testing
 
 ```bash
-npm test                                        # Unit tests (vitest, 90 tests)
+npm test                                        # Unit tests (vitest)
 cd tests/docker && bash run-recovery-test.sh    # Docker integration test
 ```
 
@@ -235,7 +247,7 @@ The Docker test creates a synthetic workspace on macOS, backs it up, restores in
 ## Security
 
 - **No telemetry, no accounts, no network calls** — fully offline
-- Credentials are only included with `--with-credentials` and encrypted with [age](https://age-encryption.org)
+- Credentials are only included with `--with-credentials` and encrypted with AES-256-GCM (scrypt key derivation)
 - Archives are portable files you control — no cloud dependency
 
 ## ⚠️ Important: Stop the Original Before Restoring

@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
-import { join, relative, basename, extname } from 'node:path';
+import { readFileSync, readdirSync, statSync, lstatSync, existsSync } from 'node:fs';
+import { join, relative, basename, extname, resolve } from 'node:path';
 import { hostname } from 'node:os';
 
 /** Known agent files at the workspace root */
@@ -103,12 +103,17 @@ export function createManifest(options: CreateManifestOptions): Manifest {
     items = [];
   }
 
+  const resolvedWorkspace = resolve(workspace);
+
   for (const item of items) {
     const fullPath = join(workspace, item.name);
     const relPath = item.name;
 
     if (isDefaultExcluded(item.name)) continue;
     if (matchesExcludePattern(relPath, item.name, exclude)) continue;
+
+    // Skip symlinks to prevent including files outside workspace
+    if (item.isSymbolicLink()) continue;
 
     if (item.isFile()) {
       // Include root-level files that are agent/config files
@@ -122,7 +127,7 @@ export function createManifest(options: CreateManifestOptions): Manifest {
       }
     } else if (item.isDirectory() && KNOWN_AGENT_DIRS.has(item.name)) {
       // Only recurse into known agent directories
-      files.push(...walkDirectory(fullPath, workspace, exclude));
+      files.push(...walkDirectory(fullPath, resolvedWorkspace, exclude));
     }
   }
 
@@ -190,6 +195,13 @@ function walkDirectory(
 
     if (isDefaultExcluded(item.name)) continue;
     if (matchesExcludePattern(relPath, item.name, excludePatterns)) continue;
+
+    // Skip symlinks to prevent including files outside workspace
+    if (item.isSymbolicLink()) continue;
+
+    // Verify resolved path stays within workspace
+    const resolvedPath = resolve(fullPath);
+    if (!resolvedPath.startsWith(rootDir + '/') && resolvedPath !== rootDir) continue;
 
     if (item.isDirectory()) {
       entries.push(...walkDirectory(fullPath, rootDir, excludePatterns));
