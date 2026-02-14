@@ -67,13 +67,14 @@ WORKDIR /workspace
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \\
-  CMD openclaw gateway status || exit 1
+  CMD openclaw health || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]
 `;
 
-  // Entrypoint: import cron jobs + start gateway
-  // OpenClaw's first-run wizard handles API key/model selection interactively
+  // Entrypoint: import cron jobs + start gateway in foreground
+  // Uses node directly (no systemd/launchd needed in containers)
+  // OpenClaw's first-run wizard handles API key/model selection via docker-compose tty
   const entrypoint = `#!/bin/sh
 set -e
 
@@ -83,8 +84,8 @@ if [ -f /workspace/config/cron-jobs.json ]; then
   openclaw cron import /workspace/config/cron-jobs.json 2>/dev/null || true
 fi
 
-# Start gateway (first run triggers OpenClaw setup wizard)
-exec openclaw gateway start
+# Start gateway in foreground (no service manager needed in Docker)
+exec openclaw gateway
 `;
 
   // Generate docker-compose.yml

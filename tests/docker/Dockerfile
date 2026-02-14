@@ -10,12 +10,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN git config --global --add url."https://github.com/".insteadOf "ssh://git@github.com/" && \
     git config --global --add url."https://github.com/".insteadOf "git@github.com:"
 
-# Install saddlebag from the local tarball + openclaw for gateway boot test
-COPY saddlebag-*.tgz /tmp/
-RUN npm install -g /tmp/saddlebag-*.tgz && npm install -g openclaw && rm /tmp/saddlebag-*.tgz
+# Install clawback-ai from the local tarball + openclaw for gateway boot test
+COPY clawback-ai-*.tgz /tmp/
+RUN npm install -g /tmp/clawback-ai-*.tgz && npm install -g openclaw && rm /tmp/clawback-ai-*.tgz
 
 # Copy the test backup archive and source paths for verification
-COPY test-backup.saddlebag /tmp/test-backup.saddlebag
+COPY test-backup.clawback /tmp/test-backup.clawback
 COPY .source-workspace-path /tmp/.source-workspace-path
 
 # Copy the verification script

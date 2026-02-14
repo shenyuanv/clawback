@@ -116,7 +116,7 @@ describe('containerize', () => {
     await containerize(archive, { outputDir });
 
     const entrypoint = readFileSync(join(outputDir, 'entrypoint.sh'), 'utf-8');
-    expect(entrypoint).toContain('openclaw gateway start');
+    expect(entrypoint).toContain('OPENCLAW_MAIN');
     expect(entrypoint).not.toContain('ANTHROPIC_API_KEY');
   });
 });
