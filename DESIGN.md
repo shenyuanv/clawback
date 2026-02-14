@@ -975,3 +975,18 @@ Cons:
 **If implemented later:** Add `--encrypt` as a separate flag (not replacing `--with-credentials`). Would need password plumbing through `info`/`verify`/`diff` commands.
 
 ---
+
+### Workspace Discovery: Include-All with Ignore (planned)
+
+**Problem:** Current backup only recurses into 4 hardcoded directories (`memory`, `config`, `skills`, `scripts`). Agents accumulate custom directories over time (`projects/`, `data/`, `research/`, etc.) that get silently dropped from backups.
+
+**Proposed fix:** Switch from allowlist to denylist approach with `.clawbackignore` support.
+
+**Options considered:**
+1. ~~Allowlist (current)~~ — always lags behind what agents create
+2. **Denylist** — backup everything except known-skip dirs (`node_modules`, `.git`, `dist`, `.cache`, `tmp`)
+3. **Hybrid (recommended)** — include-all by default + `.clawbackignore` file (gitignore syntax) for exclusions
+
+**Default ignores:** `node_modules/`, `.git/`, `dist/`, `.cache/`, `tmp/`, `*.log`, `.DS_Store`
+
+**Backward compatibility:** Archives created with the new approach will restore fine on older versions (just more files). Old archives restore fine on new versions (missing dirs are simply absent).
