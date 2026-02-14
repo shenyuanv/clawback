@@ -20,7 +20,7 @@ clawback containerize cowboy-2026-02-14.clawback --run
 ## Install
 
 ```bash
-npm install -g clawback-ai
+npm install -g github:shenyuanv/clawback
 ```
 
 Or use directly:
