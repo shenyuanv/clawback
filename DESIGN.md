@@ -990,3 +990,13 @@ Cons:
 **Default ignores:** `node_modules/`, `.git/`, `dist/`, `.cache/`, `tmp/`, `*.log`, `.DS_Store`
 
 **Backward compatibility:** Archives created with the new approach will restore fine on older versions (just more files). Old archives restore fine on new versions (missing dirs are simply absent).
+
+### Node Pairing Backup (planned)
+
+**Problem:** OpenClaw node pairing data (`~/.openclaw/devices/paired.json`) lives outside the workspace and is not auto-detected by credential backup. Losing this means re-pairing all nodes.
+
+**Fix:** Add `~/.openclaw/devices/paired.json` and `~/.openclaw/devices/pending.json` to `detectCredentialFiles()` auto-detection. They contain auth tokens, so they belong in the encrypted credential vault (`--with-credentials`).
+
+**Implementation:** Small change to `src/credentials.ts` — add to the oauth candidates list. Path remapping handles cross-platform restore. Add test for round-trip.
+
+**Workaround today:** `clawback backup --with-credentials --include-credential ~/.openclaw/devices/paired.json`
