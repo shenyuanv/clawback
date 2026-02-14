@@ -152,10 +152,10 @@ cowboy-2026-02-11.clawback
     "soul_hash": "sha256:abc123..."
   },
   "source": {
-    "hostname": "Shen的Mac mini",
+    "hostname": "agent-workstation",
     "os": "darwin",
     "arch": "arm64",
-    "workspace": "/Users/shen/clawd",
+    "workspace": "/home/agent/workspace",
     "openclaw_version": "0.9.x"
   },
   "contents": {
@@ -271,9 +271,9 @@ Paths are stored as placeholders in `env-map.json`:
 
 ```json
 {
-  "${WORKSPACE}": "/Users/shen/clawd",
-  "${HOME}": "/Users/shen",
-  "${OPENCLAW}": "/Users/shen/openclaw-dev"
+  "${WORKSPACE}": "/home/agent/workspace",
+  "${HOME}": "/home/agent",
+  "${OPENCLAW}": "/opt/openclaw"
 }
 ```
 
@@ -281,9 +281,9 @@ On restore, Clawback auto-detects new values and asks for confirmation:
 
 ```
 Path remapping (macOS → Linux):
-  ${HOME}      /Users/shen → /home/shen [auto]
-  ${WORKSPACE} /Users/shen/clawd → /home/shen/clawd [auto]
-  ${OPENCLAW}  /Users/shen/openclaw-dev → ? enter path: /opt/openclaw
+  ${HOME}      /home/agent → /home/user [auto]
+  ${WORKSPACE} /home/agent/workspace → /home/user/workspace [auto]
+  ${OPENCLAW}  /opt/openclaw → ? enter path: /usr/local/openclaw
 ```
 
 Files that contain hardcoded paths (TOOLS.md, gateway config, cron payloads) are rewritten with new values.
