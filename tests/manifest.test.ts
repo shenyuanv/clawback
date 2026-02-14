@@ -211,4 +211,56 @@ describe('manifest', () => {
     // Verify checksum exists and is valid
     expect(manifest.checksums['本我.md']).toMatch(/^sha256:[0-9a-f]{64}$/);
   });
+
+  it('--include flag includes extra directories', () => {
+    // Create a temp workspace with extra directories
+    const tmpWorkspace = mkdtempSync(join(tmpdir(), 'clawback-test-include-'));
+    writeFileSync(join(tmpWorkspace, 'SOUL.md'), '# Test Soul\n');
+    mkdirSync(join(tmpWorkspace, 'projects'), { recursive: true });
+    writeFileSync(join(tmpWorkspace, 'projects', 'project1.md'), '# Project 1\n');
+    mkdirSync(join(tmpWorkspace, 'data'), { recursive: true });
+    writeFileSync(join(tmpWorkspace, 'data', 'data.json'), '{}');
+    mkdirSync(join(tmpWorkspace, 'research'), { recursive: true });
+    writeFileSync(join(tmpWorkspace, 'research', 'notes.md'), '# Research\n');
+
+    // Without --include, these directories should NOT be included (allowlist approach)
+    const manifestDefault = createManifest({ workspace: tmpWorkspace });
+    const pathsDefault = manifestDefault.files.map((f) => f.path);
+    expect(pathsDefault).not.toContain('projects/project1.md');
+    expect(pathsDefault).not.toContain('data/data.json');
+    expect(pathsDefault).not.toContain('research/notes.md');
+    expect(pathsDefault).toContain('SOUL.md'); // Root files still included
+
+    // With --include, explicitly included directories should be present
+    const manifestWithInclude = createManifest({
+      workspace: tmpWorkspace,
+      include: ['projects', 'data'],
+    });
+    const pathsWithInclude = manifestWithInclude.files.map((f) => f.path);
+    expect(pathsWithInclude).toContain('projects/project1.md');
+    expect(pathsWithInclude).toContain('data/data.json');
+    expect(pathsWithInclude).not.toContain('research/notes.md'); // Not included
+    expect(pathsWithInclude).toContain('SOUL.md'); // Root files still included
+  });
+
+  it('--include validates directory exists and is within workspace', () => {
+    const tmpWorkspace = mkdtempSync(join(tmpdir(), 'clawback-test-include-validate-'));
+    writeFileSync(join(tmpWorkspace, 'SOUL.md'), '# Test Soul\n');
+
+    // Non-existent directory
+    expect(() => {
+      createManifest({ workspace: tmpWorkspace, include: ['nonexistent'] });
+    }).toThrow('Included directory does not exist: nonexistent');
+
+    // File instead of directory
+    writeFileSync(join(tmpWorkspace, 'notadir.txt'), 'content');
+    expect(() => {
+      createManifest({ workspace: tmpWorkspace, include: ['notadir.txt'] });
+    }).toThrow('Included path is not a directory: notadir.txt');
+
+    // Directory outside workspace
+    expect(() => {
+      createManifest({ workspace: tmpWorkspace, include: ['../../../etc'] });
+    }).toThrow('Included directory is outside workspace');
+  });
 });

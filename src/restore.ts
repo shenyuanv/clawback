@@ -101,10 +101,31 @@ echo "Originals backed up to: \${ORIGINALS_DIR}"
 `;
 }
 
+function buildRestoreWakeScript(wakeMessage: string): string {
+  return `#!/usr/bin/env bash
+set -euo pipefail
+
+WORKSPACE_DIR="$(cd "$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
+
+cd "\${WORKSPACE_DIR}"
+
+if ! command -v openclaw &> /dev/null; then
+  echo "OpenClaw not found. Install it: npm install -g openclaw"
+  exit 1
+fi
+
+echo "Sending restore awareness wake event..."
+openclaw gateway wake --text "${wakeMessage.replace(/"/g, '\\"')}" --mode now
+
+echo "Wake event sent successfully."
+`;
+}
+
 function writeRestoreArtifacts(
   targetDir: string,
   archivePath: string,
   fileCount: number,
+  manifest?: Manifest,
 ): void {
   const markerPath = join(targetDir, RESTORE_MARKER);
   const marker = {
@@ -118,6 +139,14 @@ function writeRestoreArtifacts(
   const fixupPath = join(targetDir, FIXUP_SCRIPT);
   writeFileSync(fixupPath, buildFixupScript(archivePath, PROTECTED_FILES));
   chmodSync(fixupPath, 0o755);
+
+  // Generate restore-wake.sh script if manifest is available
+  if (manifest) {
+    const wakeMessage = buildRestoreWakeMessage(manifest, archivePath);
+    const wakeScriptPath = join(targetDir, 'restore-wake.sh');
+    writeFileSync(wakeScriptPath, buildRestoreWakeScript(wakeMessage));
+    chmodSync(wakeScriptPath, 0o755);
+  }
 }
 
 export interface RestoreOptions {
@@ -141,6 +170,8 @@ export interface RestoreResult {
   missingDeps: string[];
   dryRun: boolean;
   agentName: string;
+  manifest: Manifest;
+  archivePath: string;
 }
 
 /**
@@ -375,7 +406,7 @@ export async function restoreBackup(
   }
 
   if (!options.dryRun) {
-    writeRestoreArtifacts(targetDir, archivePath, restoredFiles.length);
+    writeRestoreArtifacts(targetDir, archivePath, restoredFiles.length, manifest);
   }
 
   return {
@@ -385,6 +416,8 @@ export async function restoreBackup(
     missingDeps,
     dryRun: options.dryRun ?? false,
     agentName: manifest.agent.name,
+    manifest,
+    archivePath,
   };
 }
 
@@ -461,9 +494,26 @@ function importCronJobs(
   return imported;
 }
 
+function buildRestoreWakeMessage(manifest: Manifest, archivePath: string): string {
+  const backupDate = new Date(manifest.created);
+  const nowDate = new Date();
+  const gapMs = nowDate.getTime() - backupDate.getTime();
+  const gapDays = Math.floor(gapMs / (1000 * 60 * 60 * 24));
+  const gapHours = Math.floor((gapMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+  const gapDescription =
+    gapDays > 0 ? `${gapDays} day${gapDays > 1 ? 's' : ''} ago` :
+    gapHours > 0 ? `${gapHours} hour${gapHours > 1 ? 's' : ''} ago` :
+    'moments ago';
+
+  return `RESTORE NOTICE: Agent restored from backup ${basename(archivePath)} on ${nowDate.toISOString().slice(0, 19)}Z. Previous machine: ${manifest.source.hostname} (${manifest.source.os}/${manifest.source.arch}). Backup created ${gapDescription} (${manifest.created}). Review memory and config for any needed updates.`;
+}
+
 export async function postRestoreRun(
   workspace: string,
   agentName: string,
+  manifest?: Manifest,
+  archivePath?: string,
 ): Promise<void> {
   try {
     execSync('openclaw --version', { stdio: 'pipe' });
@@ -505,6 +555,21 @@ export async function postRestoreRun(
   try {
     execSync('openclaw gateway status', { cwd: workspace, stdio: 'pipe' });
     await writeLine(`✅ Agent ${agentName} is running`);
+
+    // Inject restore awareness wake event
+    if (manifest && archivePath) {
+      const wakeMessage = buildRestoreWakeMessage(manifest, archivePath);
+      try {
+        execFileSync('openclaw', ['gateway', 'wake', '--text', wakeMessage, '--mode', 'now'], {
+          cwd: workspace,
+          stdio: 'pipe',
+        });
+        await writeLine('Sent restore awareness wake event to agent');
+      } catch {
+        // Non-critical failure — agent is still running
+        await writeLine('⚠️ Could not send wake event (agent will discover restore status on next interaction)');
+      }
+    }
   } catch {
     await writeLine('⚠️ Gateway started but health check failed — check logs');
   }

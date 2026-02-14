@@ -48,6 +48,7 @@ export function createCli(): Command {
     .option('--with-credentials', 'Include encrypted credential vault')
     .option('--password <password>', 'Password for credential vault (non-interactive)')
     .option('--include-credential <path>', 'Include extra credential file', (val: string, prev: string[]) => prev.concat([val]), [] as string[])
+    .option('--include <dirs...>', 'Include additional directories beyond defaults')
     .option('--include-data', 'Include large skill data directories')
     .option('--exclude <pattern>', 'Exclude files matching glob pattern', (val: string, prev: string[]) => prev.concat([val]), [] as string[])
     .option('--encrypt', 'Encrypt entire archive — includes credentials automatically')
@@ -59,6 +60,7 @@ export function createCli(): Command {
           workspace: options.workspace,
           output: options.output,
           exclude: options.exclude,
+          include: options.include,
           withCredentials,
           includeData: options.includeData,
           password: options.password,
@@ -135,7 +137,7 @@ export function createCli(): Command {
 
         if (!result.dryRun && options.run) {
           await writeLine('');
-          await postRestoreRun(result.targetDir, result.agentName);
+          await postRestoreRun(result.targetDir, result.agentName, result.manifest, result.archivePath);
         }
         process.exit(0);
       } catch (err: unknown) {

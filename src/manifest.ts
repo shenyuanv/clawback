@@ -26,23 +26,23 @@ const CATEGORY_DIRS: Record<string, FileCategory> = {
   scripts: 'script',
 };
 
-/** Directory/file names always excluded */
+/** Known agent directories that are scanned by default (allowlist) */
+const KNOWN_AGENT_DIRS = new Set([...AGENT_DIRS, ...Object.keys(CATEGORY_DIRS)]);
+
+/** Directory/file names always excluded (smart denylist) */
 const DEFAULT_EXCLUDE_NAMES = new Set([
   'node_modules',
   '.git',
   '.DS_Store',
-  'data',
-  'projects',
   '.venv',
   '__pycache__',
   '.cache',
   'dist',
-  'build',
   'tmp',
 ]);
 
 /** File extensions always excluded */
-const DEFAULT_EXCLUDE_EXTENSIONS = ['.clawback'];
+const DEFAULT_EXCLUDE_EXTENSIONS = ['.clawback', '.log'];
 
 export type FileCategory = 'agent' | 'config' | 'skill' | 'script';
 
@@ -80,20 +80,33 @@ export interface Manifest {
 export interface CreateManifestOptions {
   workspace: string;
   exclude?: string[];
+  include?: string[];
 }
 
-/** Directories that contain agent state worth backing up */
-const KNOWN_AGENT_DIRS = new Set([
-  'memory',
-  'config',
-  'skills',
-  'scripts',
-]);
-
 export function createManifest(options: CreateManifestOptions): Manifest {
-  const { workspace, exclude = [] } = options;
+  const { workspace, exclude = [], include = [] } = options;
 
-  // Collect root-level files + only known agent directories
+  // Validate included directories
+  const resolvedWorkspace = resolve(workspace);
+  for (const dir of include) {
+    const fullPath = join(workspace, dir);
+    const resolved = resolve(fullPath);
+
+    // Check if it's within the workspace first (before checking existence)
+    if (!resolved.startsWith(resolvedWorkspace + '/') && resolved !== resolvedWorkspace) {
+      throw new Error(`Included directory is outside workspace: ${dir}`);
+    }
+
+    if (!existsSync(fullPath)) {
+      throw new Error(`Included directory does not exist: ${dir}`);
+    }
+    const stat = statSync(fullPath);
+    if (!stat.isDirectory()) {
+      throw new Error(`Included path is not a directory: ${dir}`);
+    }
+  }
+
+  // Allowlist approach: scan known directories + explicitly included directories
   const files: ManifestFileEntry[] = [];
 
   let items: ReturnType<typeof readdirSync>;
@@ -103,8 +116,7 @@ export function createManifest(options: CreateManifestOptions): Manifest {
     items = [];
   }
 
-  const resolvedWorkspace = resolve(workspace);
-
+  // Scan workspace root for agent files
   for (const item of items) {
     const fullPath = join(workspace, item.name);
     const relPath = item.name;
@@ -116,17 +128,27 @@ export function createManifest(options: CreateManifestOptions): Manifest {
     if (item.isSymbolicLink()) continue;
 
     if (item.isFile()) {
-      // Include root-level files that are agent/config files
-      if (AGENT_ROOT_FILES.has(item.name) || item.name.endsWith('.md') || item.name.endsWith('.yaml') || item.name.endsWith('.yml') || item.name.endsWith('.json')) {
-        const stat = statSync(fullPath);
-        files.push({
-          path: relPath,
-          category: categorizeFile(relPath),
-          size: stat.size,
-        });
+      // Include root-level files
+      const stat = statSync(fullPath);
+      files.push({
+        path: relPath,
+        category: categorizeFile(relPath),
+        size: stat.size,
+      });
+    } else if (item.isDirectory()) {
+      // Only recurse into known agent directories or explicitly included directories
+      if (KNOWN_AGENT_DIRS.has(item.name) || include.includes(item.name)) {
+        files.push(...walkDirectory(fullPath, resolvedWorkspace, exclude));
       }
-    } else if (item.isDirectory() && KNOWN_AGENT_DIRS.has(item.name)) {
-      // Only recurse into known agent directories
+    }
+  }
+
+  // Process explicitly included directories (that may not be in workspace root)
+  for (const dir of include) {
+    const fullPath = join(workspace, dir);
+    const alreadyIncluded = files.some((f) => f.path === dir || f.path.startsWith(dir + '/'));
+    if (!alreadyIncluded) {
+      // This directory wasn't scanned yet, so walk it now
       files.push(...walkDirectory(fullPath, resolvedWorkspace, exclude));
     }
   }

@@ -24,6 +24,7 @@ export interface BackupOptions {
   workspace?: string;
   output?: string;
   exclude?: string[];
+  include?: string[];
   withCredentials?: boolean;
   includeData?: boolean;
   password?: string;
@@ -104,6 +105,7 @@ export async function createBackup(options: BackupOptions): Promise<BackupResult
   const manifest = createManifest({
     workspace,
     exclude: options.exclude,
+    include: options.include,
   });
 
   // 3. Determine output path

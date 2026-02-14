@@ -246,4 +246,78 @@ describe('credentials', () => {
     expect(prompted).toContain('Anthropic');
     expect(gatewayConfig).toContain('sk-new-999');
   });
+
+  it('node pairing files round-trip (paired.json and pending.json)', async () => {
+    const workspace = createCredentialWorkspace();
+    const archivePath = createArchivePath();
+
+    // Create node pairing files in ~/.openclaw/devices/
+    const home = process.env.HOME ?? process.env.USERPROFILE;
+    if (!home) {
+      // Skip test if HOME not set
+      return;
+    }
+
+    const devicesDir = join(home, '.openclaw', 'devices');
+    const pairedPath = join(devicesDir, 'paired.json');
+    const pendingPath = join(devicesDir, 'pending.json');
+
+    // Backup existing files if they exist
+    let pairedBackup: string | undefined;
+    let pendingBackup: string | undefined;
+    if (existsSync(pairedPath)) {
+      pairedBackup = readFileSync(pairedPath, 'utf-8');
+    }
+    if (existsSync(pendingPath)) {
+      pendingBackup = readFileSync(pendingPath, 'utf-8');
+    }
+
+    try {
+      // Create test node pairing files
+      mkdirSync(devicesDir, { recursive: true });
+      writeFileSync(pairedPath, '{"device1":"token1"}');
+      writeFileSync(pendingPath, '{"device2":"token2"}');
+
+      // Backup with credentials
+      await createBackup({
+        workspace,
+        output: archivePath,
+        withCredentials: true,
+        password: 'test-pass',
+      });
+
+      // Check manifest includes node pairing files
+      const entries = await readArchiveEntries(archivePath);
+      const manifestBuf = entries.get('credentials-manifest.json');
+      expect(manifestBuf).toBeDefined();
+      const manifestJson = manifestBuf!.toString('utf-8');
+      expect(manifestJson).toContain('paired.json');
+      expect(manifestJson).toContain('pending.json');
+
+      // Restore to a new location
+      const targetDir = createTargetDir();
+      await restoreBackup(archivePath, {
+        workspace: targetDir,
+        password: 'test-pass',
+      });
+
+      // Verify node pairing files were restored
+      const restoredPaired = join(home, '.openclaw', 'devices', 'paired.json');
+      const restoredPending = join(home, '.openclaw', 'devices', 'pending.json');
+      expect(readFileSync(restoredPaired, 'utf-8')).toBe('{"device1":"token1"}');
+      expect(readFileSync(restoredPending, 'utf-8')).toBe('{"device2":"token2"}');
+    } finally {
+      // Restore original files
+      if (pairedBackup !== undefined) {
+        writeFileSync(pairedPath, pairedBackup);
+      } else if (existsSync(pairedPath)) {
+        unlinkSync(pairedPath);
+      }
+      if (pendingBackup !== undefined) {
+        writeFileSync(pendingPath, pendingBackup);
+      } else if (existsSync(pendingPath)) {
+        unlinkSync(pendingPath);
+      }
+    }
+  });
 });

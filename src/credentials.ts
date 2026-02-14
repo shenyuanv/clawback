@@ -25,6 +25,7 @@ export type CredentialSource =
   | 'env-file'
   | 'cookies'
   | 'oauth-token'
+  | 'node-pairing'
   | 'include-credential';
 
 export interface CredentialManifestEntry {
@@ -301,6 +302,25 @@ export function detectCredentialFiles(
         originalPath: candidate,
         required: false,
       });
+    }
+  }
+
+  // Node pairing files (live outside workspace in ~/.openclaw/devices/)
+  const home = process.env.HOME ?? process.env.USERPROFILE;
+  if (home) {
+    const nodePairingCandidates = [
+      join(home, '.openclaw', 'devices', 'paired.json'),
+      join(home, '.openclaw', 'devices', 'pending.json'),
+    ];
+    for (const candidate of nodePairingCandidates) {
+      if (existsSync(candidate)) {
+        pushEntry({
+          name: basename(candidate),
+          source: 'node-pairing',
+          originalPath: candidate,
+          required: false,
+        });
+      }
     }
   }
 
