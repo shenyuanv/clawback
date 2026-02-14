@@ -23,10 +23,10 @@ clawback containerize cowboy-2026-02-14.clawback --run
 npm install -g github:shenyuanv/clawback
 ```
 
-Or use directly:
+Then use:
 
 ```bash
-npx clawback backup
+clawback backup
 ```
 
 ## Common Commands
@@ -265,7 +265,8 @@ Clawback is designed for **disaster recovery** — the original is dead, you res
 > You're traveling. Your laptop dies. You have a `.clawback` file on a USB drive (or cloud storage). On any new machine with Node.js:
 
 ```bash
-npx clawback restore cowboy-backup.clawback --workspace ~/agent --force --run
+npm install -g github:shenyuanv/clawback
+clawback restore cowboy-backup.clawback --workspace ~/agent --force --run
 ```
 
 Your agent is back, with all its memories, personality, and configuration intact.
