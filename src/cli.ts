@@ -8,7 +8,6 @@ import { verifyArchive } from './verify.js';
 import { diffArchiveVsWorkspace, diffArchiveVsArchive, formatDiff } from './diff.js';
 import { getArchiveInfo, formatInfo } from './info.js';
 import { discoverWorkspace } from './discovery.js';
-import { containerize } from './containerize.js';
 import { writeStdout, writeStderr, writeLine } from './output.js';
 import { resolveArchive, cleanupTempArchive, type ResolvedArchive } from './archive-reader.js';
 import { promptForPassword } from './credentials.js';
@@ -227,40 +226,6 @@ export function createCli(): Command {
       } finally {
         if (resolved) cleanupTempArchive(resolved);
         if (resolvedB) cleanupTempArchive(resolvedB);
-      }
-    });
-
-  program
-    .command('containerize <file>')
-    .description('Generate Docker deployment files from a backup')
-    .option('--output <dir>', 'Output directory', 'deploy')
-    .option('--run', 'Build and run container interactively (OpenClaw wizard handles setup)')
-    .action(async (file, options) => {
-      try {
-        const result = await containerize(file, {
-          outputDir: options.output,
-          run: options.run,
-        });
-        await writeLine(`Generated Docker deployment for agent "${result.agentName}":`);
-        for (const f of result.files) {
-          await writeLine(`  ${result.outputDir}/${f}`);
-        }
-        if (!options.run) {
-          await writeLine('');
-          await writeLine('Next steps:');
-          await writeLine(`  cd ${result.outputDir}`);
-          await writeLine('  docker compose run -it agent   # first run: OpenClaw setup wizard');
-          await writeLine('  docker compose up -d            # then run in background');
-        } else if (result.started) {
-          await writeLine('');
-          await writeLine(`✅ Agent "${result.agentName}" is running in Docker`);
-          await writeLine('To run in background: docker compose up -d');
-        }
-        process.exit(0);
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
-        await writeStderr(`Error: ${message}\n`);
-        process.exit(1);
       }
     });
 

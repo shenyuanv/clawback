@@ -13,8 +13,6 @@ clawback backup --workspace ~/clawd
 # Restore on a new machine (bare metal)
 clawback restore cowboy-2026-02-14.clawback --workspace ~/agent --force --run
 
-# Or deploy via Docker
-clawback containerize cowboy-2026-02-14.clawback --run
 ```
 
 ## Install
@@ -46,9 +44,6 @@ clawback diff cowboy-2026-02-12.clawback --workspace ~/clawd
 
 # Restore to a new machine
 clawback restore cowboy-2026-02-12.clawback --workspace ~/agent --force
-
-# Deploy via Docker
-clawback containerize cowboy-2026-02-12.clawback --run
 ```
 
 ## Commands
@@ -101,37 +96,7 @@ The `--run` flag turns restore into a complete recovery operation:
 clawback restore backup.clawback --workspace ~/agent --force --run
 ```
 
-### `clawback containerize <file>`
-
-Generate a Docker deployment from a backup archive.
-
-```
-Options:
-  --output <dir>        Output directory (default: deploy/)
-  --run                 Build image and run interactively
-```
-
-Without `--run`, generates deployment files for manual use:
-
-```bash
-clawback containerize backup.clawback
-cd deploy
-docker compose run -it agent    # first run: OpenClaw wizard asks model + API key
-docker compose up -d             # then run in background
-```
-
-With `--run`, does everything in one command:
-
-```bash
-clawback containerize backup.clawback --run
-# → generates files → builds image → runs interactively
-# → OpenClaw wizard handles model + API key setup
-# → agent running in Docker
-```
-
-Config and memory persist via volume mounts (`./config/` and `./data/`), so the container survives restarts without re-setup.
-
-### `clawback verify <file>`
+### `clawback verify### `clawback verify <file>`
 
 Verify archive integrity by checking SHA-256 checksums of every file.
 
@@ -239,10 +204,7 @@ clawback restore backup.clawback --workspace ~/agent --password "mypassword"
 
 ```bash
 npm test                                        # Unit tests (vitest)
-cd tests/docker && bash run-recovery-test.sh    # Docker integration test
 ```
-
-The Docker test creates a synthetic workspace on macOS, backs it up, restores inside a Linux container, and verifies file integrity, path remapping, and gateway boot. Requires Docker (colima with 8GB+ RAM on macOS).
 
 ## Security
 
