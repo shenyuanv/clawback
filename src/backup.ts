@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { createWriteStream, readFileSync, writeFileSync, statSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { pipeline } from 'node:stream/promises';
 import { createGzip } from 'node:zlib';
 import { execSync } from 'node:child_process';
@@ -226,6 +227,12 @@ export async function createBackup(options: BackupOptions): Promise<BackupResult
   // Add README.md (after manifest finalized)
   const readme = generateReadme(manifest);
   pack.entry({ name: 'README.md' }, readme);
+
+  // Add RECOVERY.md (self-recovery manual for AI agents)
+  const recoveryPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'RECOVERY.md');
+  if (existsSync(recoveryPath)) {
+    pack.entry({ name: 'RECOVERY.md' }, readFileSync(recoveryPath));
+  }
 
   // Add all workspace files under their category prefix
   let fileCount = 0;
